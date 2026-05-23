@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SpellingBee.API/SpellingBee.API.csproj" />
+    <Project Path="src/SpellingBee.Shared/SpellingBee.Shared.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/SpellingBee.Progress/SpellingBee.Progress.csproj" />
+    <Project Path="src/Modules/SpellingBee.Sessions/SpellingBee.Sessions.csproj" />
+    <Project Path="src/Modules/SpellingBee.Words/SpellingBee.Words.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SpellingBee.Progress.Tests/SpellingBee.Progress.Tests.csproj" />
+    <Project Path="tests/SpellingBee.Sessions.Tests/SpellingBee.Sessions.Tests.csproj" />
+    <Project Path="tests/SpellingBee.Words.Tests/SpellingBee.Words.Tests.csproj" />
+  </Folder>
+</Solution>
