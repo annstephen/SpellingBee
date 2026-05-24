@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -29,6 +28,7 @@ public static class WordsModule
         services.AddHttpClient<IAudioFileStore, AudioFileStore>();
 
         services.AddScoped<IWordImportService, WordImportService>();
+        services.AddScoped<IWordService, WordService>();
 
         return services;
     }

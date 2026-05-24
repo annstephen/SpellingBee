@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using SpellingBee.Words;
+using SpellingBee.Words.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddWordsModule(builder.Configuration);
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<WordsDbContext>().Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
