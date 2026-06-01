@@ -24,6 +24,8 @@ nuget.config
 # VS Code (keep .vscode/ if team-shared, ignore user-specific files)
 .vscode/launch.json
 .vscode/tasks.json
+frontend/.vscode/mcp.json
+frontend/.vscode/tasks.json
 
 # Test results
 TestResults/
@@ -52,6 +54,11 @@ Thumbs.db
 frontend/node_modules/
 frontend/.angular/
 frontend/dist/
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
 
 # Logs
 *.log
