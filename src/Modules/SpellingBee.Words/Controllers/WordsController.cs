@@ -1,0 +1,64 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
+using SpellingBee.Words.Contracts;
+using SpellingBee.Words.Services;
+
+namespace SpellingBee.Words.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class WordsController : ControllerBase
+{
+    private readonly IWordImportService _importService;
+    private readonly IWordService _wordService;
+
+    public WordsController(IWordImportService importService, IWordService wordService)
+    {
+        _importService = importService;
+        _wordService = wordService;
+    }
+
+    [HttpPost("import")]
+    [EndpointName("ImportWords")]
+    [Tags("Words")]
+    public async Task<IActionResult> Import([FromForm] IFormFile? file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest("A non-empty CSV file is required.");
+
+        await using var stream = file.OpenReadStream();
+        try
+        {
+            var summary = await _importService.ImportAsync(stream, ct);
+            return Ok(summary);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost]
+    [EndpointName("AddWord")]
+    [Tags("Words")]
+    public async Task<IActionResult> Add(AddWordRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Text))
+            return BadRequest("Text is required.");
+
+        try
+        {
+            var word = await _wordService.AddWordAsync(request.Text, ct);
+            return Created($"/api/words/{word.Id}", word);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists"))
+        {
+            return Conflict(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return UnprocessableEntity(ex.Message);
+        }
+    }
+}

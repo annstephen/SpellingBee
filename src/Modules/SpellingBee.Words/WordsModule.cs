@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpellingBee.Words.Controllers;
 using SpellingBee.Words.Data;
-using SpellingBee.Words.Endpoints;
 using SpellingBee.Words.Infrastructure;
 using SpellingBee.Words.Services;
 
@@ -30,11 +29,9 @@ public static class WordsModule
         services.AddScoped<IWordImportService, WordImportService>();
         services.AddScoped<IWordService, WordService>();
 
-        return services;
-    }
+        services.AddControllers()
+                .AddApplicationPart(typeof(WordsController).Assembly);
 
-    public static IEndpointRouteBuilder MapWordsEndpoints(this IEndpointRouteBuilder app)
-    {
-        return WordEndpoints.MapWordsEndpoints(app);
+        return services;
     }
 }

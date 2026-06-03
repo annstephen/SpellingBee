@@ -23,6 +23,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.MapWordsEndpoints();
+app.MapControllers();
 
 app.Run();
