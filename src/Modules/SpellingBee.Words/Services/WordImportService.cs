@@ -111,6 +111,7 @@ internal sealed class WordImportService : IWordImportService
             TrimOptions = TrimOptions.Trim,
             MissingFieldFound = null,
             HeaderValidated = null,
+            PrepareHeaderForMatch = args => args.Header.ToLowerInvariant(),
         });
 
         csv.Read();

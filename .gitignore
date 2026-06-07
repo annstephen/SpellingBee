@@ -39,6 +39,7 @@ publish/
 appsettings.local.json
 appsettings.*.local.json
 src/SpellingBee.API/appsettings.Development.json
+src/SpellingBee.API/audio/
 **/secrets.json
 
 # Claude Code

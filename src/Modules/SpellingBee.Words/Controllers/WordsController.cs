@@ -19,9 +19,20 @@ public class WordsController : ControllerBase
         _wordService = wordService;
     }
 
+    [HttpGet]
+    [EndpointName("GetAllWords")]
+    [Tags("Words")]
+    [ProducesResponseType(typeof(IReadOnlyList<WordResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(CancellationToken ct)
+    {
+        var words = await _wordService.GetAllAsync(ct);
+        return Ok(words);
+    }
+
     [HttpPost("import")]
     [EndpointName("ImportWords")]
     [Tags("Words")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Import([FromForm] IFormFile? file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
