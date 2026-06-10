@@ -29,7 +29,6 @@ internal sealed class WordService : IWordService
     public async Task<IReadOnlyList<WordResponse>> GetAllAsync(CancellationToken ct = default)
     {
         return await _db.Words
-            .OrderBy(w => w.Text)
             .Select(w => new WordResponse(w.Id, w.Text, w.PartOfSpeech, w.Definition, w.Etymology, w.AudioKey, w.ImportedAt))
             .ToListAsync(ct);
     }

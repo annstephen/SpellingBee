@@ -33,9 +33,9 @@ public class WordsController : ControllerBase
     [EndpointName("ImportWords")]
     [Tags("Words")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Import([FromForm] IFormFile? file, CancellationToken ct)
+    public async Task<IActionResult> Import([FromForm] ImportWordsRequest? request, CancellationToken ct)
     {
-        if (file is null || file.Length == 0)
+        if (request?.File is not { Length: > 0 } file)
             return BadRequest("A non-empty CSV file is required.");
 
         await using var stream = file.OpenReadStream();
