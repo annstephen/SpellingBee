@@ -1,0 +1,22 @@
+{
+  "runtime": "Net100",
+  "documentGenerator": {
+    "fromDocument": {
+      "url": "http://localhost:5206/openapi/v1.json"
+    }
+  },
+  "codeGenerators": {
+    "openApiToTypeScriptClient": {
+      "template": "Angular",
+      "rxJsVersion": 7.0,
+      "injectionTokenType": "InjectionToken",
+      "className": "WordsClient",
+      "operationGenerationMode": "SingleClientFromOperationId",
+      "baseUrlTokenName": "API_BASE_URL",
+      "typeStyle": "Interface",
+      "dateTimeType": "Date",
+      "markOptionalProperties": true,
+      "output": "src/app/api/api.generated.ts"
+    }
+  }
+}

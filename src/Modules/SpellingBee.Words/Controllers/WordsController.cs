@@ -33,6 +33,7 @@ public class WordsController : ControllerBase
     [EndpointName("ImportWords")]
     [Tags("Words")]
     [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ImportSummary), StatusCodes.Status200OK)]
     public async Task<IActionResult> Import([FromForm] ImportWordsRequest? request, CancellationToken ct)
     {
         if (request?.File is not { Length: > 0 } file)
@@ -53,6 +54,7 @@ public class WordsController : ControllerBase
     [HttpPost]
     [EndpointName("AddWord")]
     [Tags("Words")]
+    [ProducesResponseType(typeof(WordResponse), StatusCodes.Status201Created)]
     public async Task<IActionResult> Add(AddWordRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
