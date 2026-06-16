@@ -4,6 +4,13 @@ using SpellingBee.Words;
 using SpellingBee.Words.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddWordsModule(builder.Configuration);
@@ -23,6 +30,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
+app.UseCors();
 app.MapControllers();
 
 app.Run();

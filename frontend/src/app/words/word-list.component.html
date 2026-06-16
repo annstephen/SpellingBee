@@ -1,0 +1,34 @@
+<h2>Words</h2>
+
+@if (words().length === 0) {
+  <p>No words found.</p>
+} @else {
+  <table>
+    <thead>
+      <tr>
+        <th>Word</th>
+        <th>Part of Speech</th>
+        <th>Definition</th>
+        <th>Added</th>
+        <th>Pronunciation</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (word of words(); track word.id) {
+        <tr>
+          <td>{{ word.text }}</td>
+          <td>{{ word.partOfSpeech ?? '—' }}</td>
+          <td>{{ word.definition ?? '—' }}</td>
+          <td>{{ word.importedAt | date: 'mediumDate' }}</td>
+          <td>
+            @if (word.audioKey) {
+              <a [href]="audioUrl(word.audioKey)" target="_blank" rel="noopener">Listen</a>
+            } @else {
+              —
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
