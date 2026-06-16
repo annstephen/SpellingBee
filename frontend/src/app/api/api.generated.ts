@@ -215,6 +215,11 @@ export interface WordResponse {
     [key: string]: any;
 }
 
+export interface FileParameter {
+    data: Blob;
+    fileName: string;
+}
+
 export class ApiException extends Error {
     override message: string;
     status: number;
