@@ -63,4 +63,25 @@ internal sealed class WordService : IWordService
 
         return new WordResponse(word.Id, word.Text, word.PartOfSpeech, word.Definition, word.Etymology, word.AudioKey, word.ImportedAt);
     }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var word = await _db.Words.FindAsync([id], ct);
+        if (word is null)
+            return false;
+
+        _db.Words.Remove(word);
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task DeleteManyAsync(IReadOnlyList<int> ids, CancellationToken ct = default)
+    {
+        await _db.Words.Where(w => ids.Contains(w.Id)).ExecuteDeleteAsync(ct);
+    }
+
+    public async Task ClearAllAsync(CancellationToken ct = default)
+    {
+        await _db.Words.ExecuteDeleteAsync(ct);
+    }
 }

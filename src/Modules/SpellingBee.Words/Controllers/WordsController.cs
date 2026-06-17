@@ -51,6 +51,40 @@ public class WordsController : ControllerBase
         }
     }
 
+    [HttpDelete("{id:int}")]
+    [EndpointName("DeleteWord")]
+    [Tags("Words")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var deleted = await _wordService.DeleteAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpDelete("batch")]
+    [EndpointName("DeleteWords")]
+    [Tags("Words")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteBatch([FromBody] DeleteWordsRequest request, CancellationToken ct)
+    {
+        if (request.Ids is not { Count: > 0 })
+            return BadRequest("At least one ID is required.");
+
+        await _wordService.DeleteManyAsync(request.Ids, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("clear")]
+    [EndpointName("ClearAllWords")]
+    [Tags("Words")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Clear(CancellationToken ct)
+    {
+        await _wordService.ClearAllAsync(ct);
+        return NoContent();
+    }
+
     [HttpPost]
     [EndpointName("AddWord")]
     [Tags("Words")]
