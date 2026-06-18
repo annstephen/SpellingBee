@@ -3,19 +3,29 @@
 @if (words().length === 0) {
   <p>No words found.</p>
 } @else {
+  <div>
+    <button (click)="deleteSelected()" [disabled]="selectedCount() === 0">
+      Delete selected ({{ selectedCount() }})
+    </button>
+    <button (click)="clearAll()">Clear all</button>
+  </div>
+
   <table>
     <thead>
       <tr>
+        <th><input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" /></th>
         <th>Word</th>
         <th>Part of Speech</th>
         <th>Definition</th>
         <th>Added</th>
         <th>Pronunciation</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       @for (word of words(); track word.id) {
         <tr>
+          <td><input type="checkbox" [checked]="isSelected(word.id)" (change)="toggleSelection(word.id)" /></td>
           <td>{{ word.text }}</td>
           <td>{{ word.partOfSpeech ?? '—' }}</td>
           <td>{{ word.definition ?? '—' }}</td>
@@ -27,6 +37,7 @@
               —
             }
           </td>
+          <td><button (click)="deleteOne(word.id)">Delete</button></td>
         </tr>
       }
     </tbody>

@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
+import { BehaviorSubject, switchMap } from 'rxjs';
 import { WordsClient } from '../api/api.generated';
 
 @Component({
@@ -11,7 +12,64 @@ import { WordsClient } from '../api/api.generated';
 })
 export class WordListComponent {
   private readonly client = inject(WordsClient);
-  readonly words = toSignal(this.client.getAllWords(), { initialValue: [] });
+
+  private readonly refresh$ = new BehaviorSubject<void>(undefined);
+  readonly words = toSignal(
+    this.refresh$.pipe(switchMap(() => this.client.getAllWords())),
+    { initialValue: [] }
+  );
+
+  private readonly selectedIds = signal(new Set<number>());
+  readonly selectedCount = computed(() => this.selectedIds().size);
+  readonly allSelected = computed(() => {
+    const words = this.words();
+    return words.length > 0 && words.every(w => this.selectedIds().has(w.id));
+  });
+
+  isSelected(id: number): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  toggleSelection(id: number): void {
+    this.selectedIds.update(set => {
+      const next = new Set(set);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected()) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(this.words().map(w => w.id)));
+    }
+  }
+
+  deleteOne(id: number): void {
+    if (!confirm('Delete this word?')) return;
+    this.client.deleteWord(id).subscribe(() => {
+      this.selectedIds.update(s => { const n = new Set(s); n.delete(id); return n; });
+      this.refresh$.next();
+    });
+  }
+
+  deleteSelected(): void {
+    const ids = [...this.selectedIds()];
+    if (!confirm(`Delete ${ids.length} word(s)?`)) return;
+    this.client.deleteWords({ ids }).subscribe(() => {
+      this.selectedIds.set(new Set());
+      this.refresh$.next();
+    });
+  }
+
+  clearAll(): void {
+    if (!confirm('Delete ALL words? This cannot be undone.')) return;
+    this.client.clearAllWords().subscribe(() => {
+      this.selectedIds.set(new Set());
+      this.refresh$.next();
+    });
+  }
 
   audioUrl(key: string): string {
     let subdir: string;
