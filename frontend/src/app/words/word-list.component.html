@@ -1,5 +1,24 @@
 <h2>Words</h2>
 
+<div>
+  <input
+    type="text"
+    [value]="newWordText()"
+    (input)="newWordText.set($any($event.target).value)"
+    (keydown.enter)="addWord()"
+    placeholder="Enter a word"
+  />
+  <button (click)="addWord()" [disabled]="!newWordText().trim()">Add Word</button>
+</div>
+
+<div>
+  <input #csvInput type="file" accept=".csv" style="display:none" (change)="importCsv($event)" />
+  <button (click)="csvInput.click()">Import CSV</button>
+  @if (importResult()) {
+    <span>{{ importResult() }}</span>
+  }
+</div>
+
 @if (words().length === 0) {
   <p>No words found.</p>
 } @else {

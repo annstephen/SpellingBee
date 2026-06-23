@@ -26,6 +26,29 @@ export class WordListComponent {
     return words.length > 0 && words.every(w => this.selectedIds().has(w.id));
   });
 
+  readonly newWordText = signal('');
+  readonly importResult = signal<string | null>(null);
+
+  addWord(): void {
+    const text = this.newWordText().trim();
+    if (!text) return;
+    this.client.addWord({ text }).subscribe(() => {
+      this.newWordText.set('');
+      this.refresh$.next();
+    });
+  }
+
+  importCsv(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.client.importWords({ data: file, fileName: file.name }).subscribe(result => {
+      this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}`);
+      input.value = '';
+      this.refresh$.next();
+    });
+  }
+
   isSelected(id: number): boolean {
     return this.selectedIds().has(id);
   }
