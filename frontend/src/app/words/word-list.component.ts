@@ -43,7 +43,10 @@ export class WordListComponent {
     const file = input.files?.[0];
     if (!file) return;
     this.client.importWords({ data: file, fileName: file.name }).subscribe(result => {
-      this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}`);
+      const failedDetail = result.failedWords?.length
+        ? ` (${result.failedWords.join(', ')})`
+        : '';
+      this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}${failedDetail}`);
       input.value = '';
       this.refresh$.next();
     });

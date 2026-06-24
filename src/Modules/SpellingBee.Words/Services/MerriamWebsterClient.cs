@@ -64,6 +64,27 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
             audioKey = audio.GetString();
         }
 
+        // Inflected forms (e.g. "teeth") have empty shortdef and a cxs cross-reference to the
+        // base form. Follow it once to fill in fields the inflected entry is missing.
+        if (definition is null &&
+            first.TryGetProperty("cxs", out var cxs) && cxs.GetArrayLength() > 0)
+        {
+            var cx = cxs[0];
+            if (cx.TryGetProperty("cxtis", out var cxtis) && cxtis.GetArrayLength() > 0 &&
+                cxtis[0].TryGetProperty("cxt", out var cxt))
+            {
+                var baseWord = cxt.GetString();
+                if (baseWord is not null)
+                {
+                    var baseResult = await LookupAsync(baseWord, ct);
+                    definition ??= baseResult?.Definition;
+                    etymology ??= baseResult?.Etymology;
+                    partOfSpeech ??= baseResult?.PartOfSpeech;
+                    audioKey ??= baseResult?.AudioKey;
+                }
+            }
+        }
+
         return new WordLookupResult(partOfSpeech, definition, etymology, audioKey);
     }
 
