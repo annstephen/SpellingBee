@@ -1,64 +1,113 @@
-<h2>Words</h2>
+<div class="page-container">
 
-<div>
-  <input
-    type="text"
-    [value]="newWordText()"
-    (input)="newWordText.set($any($event.target).value)"
-    (keydown.enter)="addWord()"
-    placeholder="Enter a word"
-  />
-  <button (click)="addWord()" [disabled]="!newWordText().trim()">Add Word</button>
-</div>
+  <mat-card class="actions-card">
+    <mat-card-content>
+      <div class="actions-row">
+        <mat-form-field appearance="outline" class="add-word-field">
+          <mat-label>Enter a word</mat-label>
+          <input
+            matInput
+            [value]="newWordText()"
+            (input)="newWordText.set($any($event.target).value)"
+            (keydown.enter)="addWord()"
+          />
+        </mat-form-field>
 
-<div>
-  <input #csvInput type="file" accept=".csv" style="display:none" (change)="importCsv($event)" />
-  <button (click)="csvInput.click()">Import CSV</button>
-  @if (importResult()) {
-    <span>{{ importResult() }}</span>
-  }
-</div>
+        <button mat-raised-button color="primary" (click)="addWord()" [disabled]="!newWordText().trim()">
+          <mat-icon>add</mat-icon>
+          Add Word
+        </button>
 
-@if (words().length === 0) {
-  <p>No words found.</p>
-} @else {
-  <div>
-    <button (click)="deleteSelected()" [disabled]="selectedCount() === 0">
-      Delete selected ({{ selectedCount() }})
-    </button>
-    <button (click)="clearAll()">Clear all</button>
-  </div>
+        <input #csvInput type="file" accept=".csv" style="display:none" (change)="importCsv($event)" />
+        <button mat-stroked-button (click)="csvInput.click()">
+          <mat-icon>upload_file</mat-icon>
+          Import CSV
+        </button>
 
-  <table>
-    <thead>
-      <tr>
-        <th><input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" /></th>
-        <th>Word</th>
-        <th>Part of Speech</th>
-        <th>Definition</th>
-        <th>Added</th>
-        <th>Pronunciation</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (word of words(); track word.id) {
-        <tr>
-          <td><input type="checkbox" [checked]="isSelected(word.id)" (change)="toggleSelection(word.id)" /></td>
-          <td>{{ word.text }}</td>
-          <td>{{ word.partOfSpeech ?? '—' }}</td>
-          <td>{{ word.definition ?? '—' }}</td>
-          <td>{{ word.importedAt | date: 'mediumDate' }}</td>
-          <td>
+        @if (importResult()) {
+          <span class="import-result">{{ importResult() }}</span>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (words().length === 0) {
+    <p class="empty-state">No words found. Add one above or import a CSV.</p>
+  } @else {
+
+    <div class="bulk-actions-row">
+      <button mat-raised-button color="warn" (click)="deleteSelected()" [disabled]="selectedCount() === 0">
+        <mat-icon>delete_sweep</mat-icon>
+        Delete selected ({{ selectedCount() }})
+      </button>
+      <button mat-stroked-button color="warn" (click)="clearAll()">
+        <mat-icon>delete_forever</mat-icon>
+        Clear all
+      </button>
+    </div>
+
+    <mat-card class="table-card">
+      <table mat-table [dataSource]="words()" class="word-table mat-elevation-z0">
+
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-checkbox
+              [checked]="allSelected()"
+              [indeterminate]="selectedCount() > 0 && !allSelected()"
+              (change)="toggleSelectAll()"
+            />
+          </th>
+          <td mat-cell *matCellDef="let word">
+            <mat-checkbox [checked]="isSelected(word.id)" (change)="toggleSelection(word.id)" />
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="text">
+          <th mat-header-cell *matHeaderCellDef>Word</th>
+          <td mat-cell *matCellDef="let word">{{ word.text }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="partOfSpeech">
+          <th mat-header-cell *matHeaderCellDef>Part of Speech</th>
+          <td mat-cell *matCellDef="let word">{{ word.partOfSpeech ?? '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="definition">
+          <th mat-header-cell *matHeaderCellDef>Definition</th>
+          <td mat-cell *matCellDef="let word">{{ word.definition ?? '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="importedAt">
+          <th mat-header-cell *matHeaderCellDef>Added</th>
+          <td mat-cell *matCellDef="let word">{{ word.importedAt | date: 'mediumDate' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="audio">
+          <th mat-header-cell *matHeaderCellDef>Pronunciation</th>
+          <td mat-cell *matCellDef="let word">
             @if (word.audioKey) {
-              <a [href]="audioUrl(word.audioKey)" target="_blank" rel="noopener">Listen</a>
+              <a mat-icon-button [href]="audioUrl(word.audioKey)" target="_blank" rel="noopener" matTooltip="Listen">
+                <mat-icon>volume_up</mat-icon>
+              </a>
             } @else {
-              —
+              <span class="muted">—</span>
             }
           </td>
-          <td><button (click)="deleteOne(word.id)">Delete</button></td>
-        </tr>
-      }
-    </tbody>
-  </table>
-}
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let word">
+            <button mat-icon-button color="warn" (click)="deleteOne(word.id)" matTooltip="Delete word">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card>
+
+  }
+</div>

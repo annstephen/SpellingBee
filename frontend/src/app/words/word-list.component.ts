@@ -3,12 +3,31 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { BehaviorSubject, switchMap } from 'rxjs';
 import { WordsClient } from '../api/api.generated';
+import { MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-word-list',
   standalone: true,
-  imports: [DatePipe],
+  imports: [
+    DatePipe,
+    MatTableModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCardModule,
+    MatTooltipModule,
+  ],
   templateUrl: './word-list.component.html',
+  styleUrl: './word-list.component.scss',
 })
 export class WordListComponent {
   private readonly client = inject(WordsClient);
@@ -28,6 +47,10 @@ export class WordListComponent {
 
   readonly newWordText = signal('');
   readonly importResult = signal<string | null>(null);
+
+  readonly displayedColumns: string[] = [
+    'select', 'text', 'partOfSpeech', 'definition', 'importedAt', 'audio', 'actions',
+  ];
 
   addWord(): void {
     const text = this.newWordText().trim();

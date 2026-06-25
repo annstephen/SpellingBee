@@ -1,0 +1,78 @@
+.page-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.actions-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.add-word-field {
+  min-width: 220px;
+  margin-bottom: -1.25em; // compensate mat-form-field's bottom hint/error space
+}
+
+.import-result {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.bulk-actions-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.word-table {
+  width: 100%;
+
+  .mat-column-select,
+  .mat-column-actions {
+    width: 56px;
+    text-align: center;
+  }
+
+  .mat-column-audio {
+    width: 80px;
+    text-align: center;
+  }
+
+  .mat-column-importedAt {
+    width: 130px;
+    white-space: nowrap;
+  }
+
+  .mat-column-partOfSpeech {
+    width: 140px;
+  }
+
+  .mat-column-definition {
+    max-width: 300px;
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--mat-sys-on-surface-variant);
+}
