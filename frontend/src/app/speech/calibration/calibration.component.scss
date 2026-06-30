@@ -1,0 +1,73 @@
+.center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 64px);
+  padding: 24px;
+}
+
+.calibration-card {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+
+  mat-card-actions {
+    justify-content: center;
+    padding-bottom: 16px;
+  }
+}
+
+.letter-display {
+  font-size: 120px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mat-sys-primary);
+  margin: 16px 0;
+}
+
+.instruction {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.sample-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+
+  mat-icon {
+    color: var(--mat-sys-outline);
+
+    &.filled {
+      color: var(--mat-sys-primary);
+    }
+  }
+}
+
+.overall-progress {
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
+.already-done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--mat-sys-primary);
+  font-weight: 500;
+}
+
+.success-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: var(--mat-sys-primary);
+  margin: 16px 0;
+}

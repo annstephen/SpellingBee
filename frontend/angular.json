@@ -32,7 +32,11 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "polyfills": [
+              "src/polyfills.ts"
+            ],
+            "externalDependencies": ["fs", "util", "path", "os", "crypto"]
           },
           "configurations": {
             "production": {

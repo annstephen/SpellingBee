@@ -1,0 +1,21 @@
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+
+  h1 {
+    margin-bottom: 32px;
+  }
+}
+
+.button-row {
+  display: flex;
+  gap: 16px;
+
+  a[mat-raised-button] {
+    font-size: 1.1rem;
+    padding: 12px 24px;
+    height: auto;
+  }
+}

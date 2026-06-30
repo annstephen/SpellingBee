@@ -1,0 +1,109 @@
+@if (phase() === 'loading') {
+  <div class="center-content">
+    <mat-card>
+      <mat-card-content>
+        <p>Loading voice model...</p>
+        <mat-progress-bar mode="indeterminate" />
+      </mat-card-content>
+    </mat-card>
+  </div>
+}
+
+@if (phase() === 'welcome') {
+  <div class="center-content">
+    <mat-card class="calibration-card">
+      <mat-card-header>
+        <mat-card-title>Voice Calibration</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>
+          To recognise your voice, we need you to say each letter of the alphabet out loud.
+          You'll say each letter <strong>{{ samplesNeeded() }} times</strong>.
+        </p>
+        <p>This takes about 5 minutes and only needs to be done once.</p>
+        @if (alreadyCalibrated()) {
+          <p class="already-done">
+            <mat-icon>check_circle</mat-icon> Your voice is already calibrated.
+          </p>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        @if (alreadyCalibrated()) {
+          <button mat-flat-button (click)="recalibrate()">Recalibrate</button>
+        } @else {
+          <button mat-flat-button color="primary" (click)="startCalibration()">
+            Start Calibration
+          </button>
+        }
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+@if (phase() === 'recording') {
+  <div class="center-content">
+    <mat-card class="calibration-card">
+      <mat-card-header>
+        <mat-card-title>Letter {{ currentLetterIndex() + 1 }} of {{ totalLetters() }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="letter-display">{{ currentLetter() }}</div>
+        <p class="instruction">Say the letter <strong>"{{ currentLetter() }}"</strong> and tap the mic</p>
+
+        <div class="sample-dots">
+          @for (i of [].constructor(samplesNeeded()); track $index) {
+            <mat-icon [class.filled]="$index < samplesRecorded()">
+              {{ $index < samplesRecorded() ? 'radio_button_checked' : 'radio_button_unchecked' }}
+            </mat-icon>
+          }
+        </div>
+
+        <mat-progress-bar mode="determinate" [value]="progressPct()" class="overall-progress" />
+        <p class="progress-label">Overall progress: {{ currentLetterIndex() }}/{{ totalLetters() }} letters done</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button
+          mat-fab
+          color="primary"
+          [disabled]="isRecording()"
+          (click)="recordSample()"
+          aria-label="Record sample"
+        >
+          <mat-icon>{{ isRecording() ? 'mic' : 'mic_none' }}</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+@if (phase() === 'training') {
+  <div class="center-content">
+    <mat-card class="calibration-card">
+      <mat-card-header>
+        <mat-card-title>Training your model...</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p>This takes about 30 seconds.</p>
+        <mat-progress-bar mode="determinate" [value]="trainingProgress()" />
+        <p class="progress-label">{{ trainingProgress() }}%</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}
+
+@if (phase() === 'done') {
+  <div class="center-content">
+    <mat-card class="calibration-card">
+      <mat-card-header>
+        <mat-card-title>You're ready!</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-icon class="success-icon">check_circle</mat-icon>
+        <p>Your voice model has been saved. You won't need to do this again.</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-flat-button color="primary" (click)="goToWords()">Go to Words</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
