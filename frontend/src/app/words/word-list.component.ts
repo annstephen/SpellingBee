@@ -128,4 +128,8 @@ export class WordListComponent {
     else subdir = key[0].toLowerCase();
     return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${subdir}/${key}.mp3`;
   }
+
+  playAudio(key: string): void {
+    new Audio(this.audioUrl(key)).play();
+  }
 }
