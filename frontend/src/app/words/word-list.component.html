@@ -19,10 +19,19 @@
         </button>
 
         <input #csvInput type="file" accept=".csv" style="display:none" (change)="importCsv($event)" />
-        <button mat-stroked-button (click)="csvInput.click()">
-          <mat-icon>upload_file</mat-icon>
-          Import CSV
+        <button mat-stroked-button (click)="csvInput.click()" [disabled]="importing()">
+          @if (importing()) {
+            <mat-spinner diameter="18" style="display:inline-block; margin-right:6px;"></mat-spinner>
+            Importing…
+          } @else {
+            <mat-icon>upload_file</mat-icon>
+            Import CSV
+          }
         </button>
+
+        @if (addWordError()) {
+          <span class="add-word-error">{{ addWordError() }}</span>
+        }
 
         @if (importResult()) {
           <span class="import-result">{{ importResult() }}</span>

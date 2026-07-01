@@ -2,7 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { BehaviorSubject, switchMap } from 'rxjs';
-import { WordsClient } from '../api/api.generated';
+import { finalize } from 'rxjs/operators';
+import { ApiException, WordsClient } from '../api/api.generated';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-word-list',
@@ -25,6 +27,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatInputModule,
     MatCardModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
   ],
   templateUrl: './word-list.component.html',
   styleUrl: './word-list.component.scss',
@@ -46,7 +49,9 @@ export class WordListComponent {
   });
 
   readonly newWordText = signal('');
+  readonly addWordError = signal<string | null>(null);
   readonly importResult = signal<string | null>(null);
+  readonly importing = signal(false);
 
   readonly displayedColumns: string[] = [
     'select', 'text', 'partOfSpeech', 'definition', 'importedAt', 'audio', 'actions',
@@ -55,9 +60,15 @@ export class WordListComponent {
   addWord(): void {
     const text = this.newWordText().trim();
     if (!text) return;
-    this.client.addWord({ text }).subscribe(() => {
-      this.newWordText.set('');
-      this.refresh$.next();
+    this.addWordError.set(null);
+    this.client.addWord({ text }).subscribe({
+      next: () => {
+        this.newWordText.set('');
+        this.refresh$.next();
+      },
+      error: (err: ApiException) => {
+        this.addWordError.set(err.result?.detail ?? 'Could not add word. Please try again.');
+      },
     });
   }
 
@@ -65,14 +76,17 @@ export class WordListComponent {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    this.client.importWords({ data: file, fileName: file.name }).subscribe(result => {
-      const failedDetail = result.failedWords?.length
-        ? ` (${result.failedWords.join(', ')})`
-        : '';
-      this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}${failedDetail}`);
-      input.value = '';
-      this.refresh$.next();
-    });
+    this.importing.set(true);
+    this.client.importWords({ data: file, fileName: file.name })
+      .pipe(finalize(() => this.importing.set(false)))
+      .subscribe(result => {
+        const failedDetail = result.failedWords?.length
+          ? ` (${result.failedWords.join(', ')})`
+          : '';
+        this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}${failedDetail}`);
+        input.value = '';
+        this.refresh$.next();
+      });
   }
 
   isSelected(id: number): boolean {
