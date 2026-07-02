@@ -1,0 +1,14 @@
+<div class="sessions-container">
+  @if (calibrated() === false) {
+    <div class="calibration-prompt">
+      <mat-icon>mic_off</mat-icon>
+      <p>You need to complete voice calibration before starting a session.</p>
+      <a mat-raised-button color="primary" routerLink="/calibrate">
+        <mat-icon>mic</mat-icon>
+        Calibrate Voice
+      </a>
+    </div>
+  } @else if (calibrated() === true) {
+    <p class="placeholder">Sessions coming soon.</p>
+  }
+</div>

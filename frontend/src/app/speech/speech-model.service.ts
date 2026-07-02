@@ -88,6 +88,16 @@ export class SpeechModelService {
     }
   }
 
+  async isCalibrated(): Promise<boolean> {
+    if (this.isModelReady()) return true;
+    try {
+      const models = await tf.io.listModels();
+      return SAVED_MODEL_KEY in models;
+    } catch {
+      return false;
+    }
+  }
+
   async clearModel(): Promise<void> {
     if (!this.transferRecognizer) return;
     this.transferRecognizer.clearExamples();

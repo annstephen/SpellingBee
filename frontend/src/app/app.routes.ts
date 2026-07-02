@@ -12,4 +12,9 @@ export const routes: Routes = [
         (m) => m.CalibrationComponent,
       ),
   },
+  {
+    path: 'sessions',
+    loadComponent: () =>
+      import('./sessions/sessions.component').then((m) => m.SessionsComponent),
+  },
 ];
