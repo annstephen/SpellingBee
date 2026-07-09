@@ -1,14 +1,212 @@
 <div class="sessions-container">
-  @if (calibrated() === false) {
-    <div class="calibration-prompt">
-      <mat-icon>mic_off</mat-icon>
-      <p>You need to complete voice calibration before starting a session.</p>
-      <a mat-raised-button color="primary" routerLink="/calibrate">
-        <mat-icon>mic</mat-icon>
-        Calibrate Voice
-      </a>
-    </div>
-  } @else if (calibrated() === true) {
-    <p class="placeholder">Sessions coming soon.</p>
+
+  @switch (phase()) {
+    @case ('checking') {
+      <mat-spinner diameter="48"></mat-spinner>
+    }
+
+    <!-- Voice calibration gate is hidden for now; sessions are typed instead of spoken.
+    @case ('not-calibrated') {
+      <div class="calibration-prompt">
+        <mat-icon>mic_off</mat-icon>
+        <p>You need to complete voice calibration before starting a session.</p>
+        <a mat-raised-button color="primary" routerLink="/calibrate">
+          <mat-icon>mic</mat-icon>
+          Calibrate Voice
+        </a>
+      </div>
+    }
+    -->
+
+    @case ('configure') {
+      <mat-card class="session-card">
+        <mat-card-header>
+          <mat-card-title>Start a Session</mat-card-title>
+          <mat-card-subtitle>{{ maxWords() }} word{{ maxWords() === 1 ? '' : 's' }} available</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="word-count-field">
+            <mat-label>Number of words</mat-label>
+            <input
+              matInput
+              type="number"
+              [min]="1"
+              [max]="maxWords()"
+              [value]="wordCount()"
+              (change)="setWordCount($any($event.target).value)"
+            />
+          </mat-form-field>
+          <p class="hint">Listen to each word, then type the spelling.</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button
+            mat-raised-button
+            color="primary"
+            [disabled]="maxWords() === 0"
+            (click)="startSession()"
+          >
+            Start Session
+          </button>
+          @if (maxWords() === 0) {
+            <p class="error-text">Add words to your word list before starting a session.</p>
+          }
+        </mat-card-actions>
+      </mat-card>
+    }
+
+    @case ('resume-prompt') {
+      <mat-card class="session-card">
+        <mat-card-header>
+          <mat-card-title>Resume Session?</mat-card-title>
+          <mat-card-subtitle>
+            Word {{ (session()?.currentWordIndex ?? 0) + 1 }} of {{ session()?.wordCount }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>You have an unfinished session. Would you like to continue where you left off?</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="resumeSession()">Resume</button>
+          <button mat-stroked-button (click)="discardAndStartNew()">Start New</button>
+        </mat-card-actions>
+      </mat-card>
+    }
+
+    @case ('loading') {
+      <div class="loading">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Loading words…</p>
+      </div>
+    }
+
+    @case ('playing') {
+      <mat-card class="session-card playing-card">
+        <mat-card-header>
+          <mat-card-title>
+            Word {{ (session()?.currentWordIndex ?? 0) + 1 }} of {{ session()?.wordCount }}
+          </mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="pronunciation-row">
+            <button
+              mat-icon-button
+              [disabled]="!currentWord()?.audioKey"
+              (click)="playCurrentWord()"
+              matTooltip="Play pronunciation"
+            >
+              <mat-icon>volume_up</mat-icon>
+            </button>
+            <span class="hint">Listen, then type the word</span>
+          </div>
+
+          <!-- Voice input UI is hidden for now; replaced by a typed word field below.
+          <div class="letter-boxes">
+            @for (i of letterIndices(); track i) {
+              <div class="letter-box" [class.filled]="!!letterBuffer()[i]">
+                {{ letterBuffer()[i] ?? '' }}
+              </div>
+            }
+          </div>
+
+          @if (!feedbackVisible()) {
+            <div class="listening-indicator">
+              <mat-icon class="mic-pulse">mic</mat-icon>
+              <span>Listening…</span>
+            </div>
+          }
+          -->
+
+          @if (!feedbackVisible()) {
+            <mat-form-field appearance="outline" class="word-input-field">
+              <mat-label>Type the word</mat-label>
+              <input
+                matInput
+                autocomplete="off"
+                spellcheck="false"
+                [value]="typedWord()"
+                (input)="setTypedWord($any($event.target).value)"
+                (keydown.enter)="submitWord()"
+              />
+            </mat-form-field>
+          }
+
+          @if (feedbackVisible()) {
+            <div class="feedback" [class.correct]="lastAttempt()?.correct" [class.incorrect]="!lastAttempt()?.correct">
+              @if (lastAttempt()?.correct) {
+                <mat-icon>check_circle</mat-icon>
+                <span>Correct!</span>
+              } @else {
+                <mat-icon>cancel</mat-icon>
+                <span>Incorrect — the word is <strong>{{ currentWord()?.text }}</strong></span>
+              }
+            </div>
+          }
+        </mat-card-content>
+
+        <mat-card-actions>
+          @if (feedbackVisible()) {
+            <button mat-raised-button color="primary" (click)="nextWord()">
+              @if ((session()?.currentWordIndex ?? 0) + 1 < (session()?.wordCount ?? 0)) {
+                Next Word
+              } @else {
+                See Results
+              }
+              <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+            </button>
+          } @else {
+            <button
+              mat-raised-button
+              color="primary"
+              [disabled]="!typedWord().trim()"
+              (click)="submitWord()"
+            >
+              Submit
+              <mat-icon iconPositionEnd>check</mat-icon>
+            </button>
+          }
+        </mat-card-actions>
+      </mat-card>
+    }
+
+    @case ('complete') {
+      <mat-card class="session-card">
+        <mat-card-header>
+          <mat-card-title>Session Complete!</mat-card-title>
+          <mat-card-subtitle>
+            Score: {{ correctCount() }} / {{ session()?.wordCount }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="score-display">
+            <span class="score-number">{{ correctCount() }}</span>
+            <span class="score-denom">/ {{ session()?.wordCount }}</span>
+          </div>
+
+          @if (mistakes().length > 0) {
+            <h3>Words to review</h3>
+            <ul class="mistakes-list">
+              @for (attempt of mistakes(); track attempt.wordId) {
+                <li>
+                  <strong>{{ attempt.word }}</strong>
+                  <span class="user-input"> — you spelled: {{ attempt.userInput }}</span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="perfect">Perfect score! Well done.</p>
+          }
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-raised-button color="primary" (click)="newSession()">
+            <mat-icon>replay</mat-icon>
+            New Session
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
   }
+
 </div>
