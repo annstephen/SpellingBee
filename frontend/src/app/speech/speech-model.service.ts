@@ -3,10 +3,13 @@ import * as tf from '@tensorflow/tfjs';
 import * as speechCommands from '@tensorflow-models/speech-commands';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const SAMPLES_PER_LETTER = 5;
-const SAVED_MODEL_KEY = 'indexeddb://spelling-bee-model';
+const SAMPLES_PER_LETTER = 12;
 const TRANSFER_NAME = 'spelling-bee';
-const PROBABILITY_THRESHOLD = 0.85;
+const PROBABILITY_THRESHOLD = 0.65;
+// speech-commands canonical path (SAVE_PATH_PREFIX + TRANSFER_NAME) — used for isCalibrated / clearModel.
+// Do NOT pass this as an argument to save()/load(): the library only persists word labels to
+// localStorage when called without an explicit key.
+const CANONICAL_MODEL_KEY = `indexeddb://tfjs-speech-commands-model/${TRANSFER_NAME}`;
 
 @Injectable({ providedIn: 'root' })
 export class SpeechModelService {
@@ -23,10 +26,11 @@ export class SpeechModelService {
     this.isBaseModelLoaded.set(true);
 
     try {
-      await this.transferRecognizer.load(SAVED_MODEL_KEY);
+      await this.transferRecognizer.load();
       this.isModelReady.set(true);
       return true;
-    } catch {
+    } catch (err) {
+      console.error('[SpeechModelService] Failed to load transfer model:', err);
       return false;
     }
   }
@@ -54,7 +58,7 @@ export class SpeechModelService {
         },
       },
     });
-    await this.transferRecognizer.save(SAVED_MODEL_KEY);
+    await this.transferRecognizer.save();
     this.isModelReady.set(true);
   }
 
@@ -64,18 +68,30 @@ export class SpeechModelService {
     }
     await this.transferRecognizer.listen(
       async (result: speechCommands.SpeechCommandRecognizerResult) => {
-        const scores = result.scores as Float32Array;
-        const labels = this.transferRecognizer!.wordLabels();
-        let maxScore = 0;
-        let topLabel = '';
-        for (let i = 0; i < scores.length; i++) {
-          if (scores[i] > maxScore) {
-            maxScore = scores[i];
-            topLabel = labels[i];
+        try {
+          // result.scores may be Float32Array or Float32Array[] (when overlapFactor > 0)
+          const raw = result.scores;
+          if (!raw) return;
+          const scores: Float32Array = Array.isArray(raw)
+            ? (raw as Float32Array[])[raw.length - 1]
+            : (raw as Float32Array);
+          if (!scores) return;
+
+          const labels = this.transferRecognizer!.wordLabels() ?? LETTERS;
+          let maxScore = 0;
+          let topLabel = '';
+          for (let i = 0; i < scores.length; i++) {
+            if (scores[i] > maxScore) {
+              maxScore = scores[i];
+              topLabel = labels[i];
+            }
           }
-        }
-        if (maxScore >= PROBABILITY_THRESHOLD && topLabel !== '_background_noise_') {
-          onLetter(topLabel);
+          if (maxScore >= PROBABILITY_THRESHOLD && topLabel !== '_background_noise_') {
+            onLetter(topLabel);
+          }
+        } catch (err) {
+          // Keep the loop alive, but surface the error instead of swallowing it silently
+          console.error('[SpeechModelService] Error processing audio frame:', err);
         }
       },
       { probabilityThreshold: PROBABILITY_THRESHOLD },
@@ -92,7 +108,7 @@ export class SpeechModelService {
     if (this.isModelReady()) return true;
     try {
       const models = await tf.io.listModels();
-      return SAVED_MODEL_KEY in models;
+      return CANONICAL_MODEL_KEY in models;
     } catch {
       return false;
     }
@@ -100,10 +116,18 @@ export class SpeechModelService {
 
   async clearModel(): Promise<void> {
     if (!this.transferRecognizer) return;
-    this.transferRecognizer.clearExamples();
+    try {
+      this.transferRecognizer.clearExamples();
+    } catch {
+      // no in-memory examples to clear (model was loaded from storage)
+    }
+    // When a model is loaded from IndexedDB, the library sets `model` but never sets
+    // `secondLastBaseDenseLayer`. Nulling `model` forces train() to call
+    // createTransferModelFromBaseModel() which sets both correctly.
+    (this.transferRecognizer as any).model = null;
     this.isModelReady.set(false);
     try {
-      await tf.io.removeModel(SAVED_MODEL_KEY);
+      await tf.io.removeModel(CANONICAL_MODEL_KEY);
     } catch {
       // ignore if not found
     }

@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { BehaviorSubject, switchMap } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { ApiException, WordsClient } from '../api/api.generated';
+import { WordAudioService } from './word-audio.service';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +35,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 })
 export class WordListComponent {
   private readonly client = inject(WordsClient);
+  readonly audio = inject(WordAudioService);
 
   private readonly refresh$ = new BehaviorSubject<void>(undefined);
   readonly words = toSignal(
@@ -134,16 +136,4 @@ export class WordListComponent {
     });
   }
 
-  audioUrl(key: string): string {
-    let subdir: string;
-    if (key.startsWith('bix')) subdir = 'bix';
-    else if (key.startsWith('gg')) subdir = 'gg';
-    else if (/^[^a-zA-Z]/.test(key[0])) subdir = 'number';
-    else subdir = key[0].toLowerCase();
-    return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${subdir}/${key}.mp3`;
-  }
-
-  playAudio(key: string): void {
-    new Audio(this.audioUrl(key)).play();
-  }
 }

@@ -95,7 +95,7 @@
           <th mat-header-cell *matHeaderCellDef>Pronunciation</th>
           <td mat-cell *matCellDef="let word">
             @if (word.audioKey) {
-              <button mat-icon-button (click)="playAudio(word.audioKey)" matTooltip="Listen">
+              <button mat-icon-button (click)="audio.play(word.audioKey)" matTooltip="Listen">
                 <mat-icon>volume_up</mat-icon>
               </button>
             } @else {
