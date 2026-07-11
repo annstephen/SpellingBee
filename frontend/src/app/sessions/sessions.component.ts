@@ -51,6 +51,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
   readonly session = signal<SessionState | null>(null);
   readonly typedWord = signal('');
   readonly feedbackVisible = signal(false);
+  readonly meaningVisible = signal(false);
 
   readonly currentWord = computed(() => {
     const s = this.session();
@@ -120,6 +121,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.session.set(state);
     this.typedWord.set('');
     this.feedbackVisible.set(false);
+    this.meaningVisible.set(false);
     await this.sessionService.save(state);
 
     this.playCurrentWord();
@@ -130,6 +132,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
   async resumeSession(): Promise<void> {
     this.feedbackVisible.set(false);
     this.typedWord.set('');
+    this.meaningVisible.set(false);
     this.playCurrentWord();
     // this.startListening();
     this.phase.set('playing');
@@ -150,6 +153,10 @@ export class SessionsComponent implements OnInit, OnDestroy {
 
   setTypedWord(value: string): void {
     this.typedWord.set(value);
+  }
+
+  toggleMeaning(): void {
+    this.meaningVisible.update(v => !v);
   }
 
   async submitWord(): Promise<void> {
@@ -178,6 +185,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.session.set(updated);
     this.typedWord.set('');
     this.feedbackVisible.set(false);
+    this.meaningVisible.set(false);
     await this.sessionService.save(updated);
     this.playCurrentWord();
   }
@@ -187,6 +195,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.session.set(null);
     this.typedWord.set('');
     this.feedbackVisible.set(false);
+    this.meaningVisible.set(false);
     await this.loadWordCount();
     this.phase.set('configure');
   }

@@ -77,6 +77,12 @@
   gap: 0.5rem;
 }
 
+.word-info {
+  font-size: 0.9rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+
 // Voice input styles are unused while voice recognition is hidden, kept for reference.
 // .letter-boxes {
 //   display: flex;
