@@ -349,6 +349,7 @@ export interface WordResponse {
     partOfSpeech: string | undefined;
     definition: string | undefined;
     etymology: string | undefined;
+    origin: string | undefined;
     audioKey: string | undefined;
     importedAt: Date;
 

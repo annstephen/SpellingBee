@@ -6,5 +6,6 @@ public sealed record WordResponse(
     string? PartOfSpeech,
     string? Definition,
     string? Etymology,
+    string? Origin,
     string? AudioKey,
     DateTimeOffset ImportedAt);

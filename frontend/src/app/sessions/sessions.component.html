@@ -105,11 +105,23 @@
             >
               <mat-icon>menu_book</mat-icon>
             </button>
+            <button
+              mat-icon-button
+              [disabled]="!currentWord()?.origin"
+              (click)="toggleOrigin()"
+              matTooltip="Show language of origin"
+            >
+              <mat-icon>language</mat-icon>
+            </button>
             <span class="hint">Listen, then type the word</span>
           </div>
 
           @if (meaningVisible() && currentWord()?.definition) {
             <p class="word-info"><strong>Meaning:</strong> {{ currentWord()?.definition }}</p>
+          }
+
+          @if (originVisible() && currentWord()?.origin) {
+            <p class="word-info"><strong>Origin:</strong> {{ currentWord()?.origin }}</p>
           }
 
           <!-- Voice input UI is hidden for now; replaced by a typed word field below.
