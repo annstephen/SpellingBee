@@ -85,6 +85,16 @@ public class WordsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("refresh-example-sentences")]
+    [EndpointName("RefreshExampleSentences")]
+    [Tags("Words")]
+    [ProducesResponseType(typeof(ExampleSentenceRefreshSummary), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RefreshExampleSentences(CancellationToken ct)
+    {
+        var summary = await _wordService.RefreshExampleSentencesAsync(ct);
+        return Ok(summary);
+    }
+
     [HttpPost]
     [EndpointName("AddWord")]
     [Tags("Words")]

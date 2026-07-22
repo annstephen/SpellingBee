@@ -163,5 +163,68 @@ public sealed class WordServiceTests : IDisposable
         Assert.Equal(0, await _db.Words.CountAsync());
     }
 
+    [Fact]
+    public async Task RefreshExampleSentencesAsync_WordMissingSentence_UpdatesIt()
+    {
+        var word = Word.Create("quorum", null, null, null, null, null);
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+        _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
+            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null, null, "The board could not vote without a quorum."));
+
+        var summary = await _sut.RefreshExampleSentencesAsync();
+
+        Assert.Equal(1, summary.Updated);
+        Assert.Equal(0, summary.Skipped);
+        Assert.Equal(0, summary.Failed);
+        Assert.Equal("The board could not vote without a quorum.",
+            (await _db.Words.SingleAsync(w => w.Id == word.Id)).ExampleSentence);
+    }
+
+    [Fact]
+    public async Task RefreshExampleSentencesAsync_WordAlreadyHasSentence_IsNotRefetched()
+    {
+        var word = Word.Create("quorum", null, null, null, null, null, "Already has a sentence.");
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+
+        var summary = await _sut.RefreshExampleSentencesAsync();
+
+        Assert.Equal(0, summary.Updated);
+        await _mwClient.DidNotReceive().LookupAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RefreshExampleSentencesAsync_LookupHasNoSentence_CountsAsSkipped()
+    {
+        var word = Word.Create("quorum", null, null, null, null, null);
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+        _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
+            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null, null));
+
+        var summary = await _sut.RefreshExampleSentencesAsync();
+
+        Assert.Equal(0, summary.Updated);
+        Assert.Equal(1, summary.Skipped);
+        Assert.Null((await _db.Words.SingleAsync(w => w.Id == word.Id)).ExampleSentence);
+    }
+
+    [Fact]
+    public async Task RefreshExampleSentencesAsync_LookupThrows_CountsAsFailed()
+    {
+        var word = Word.Create("quorum", null, null, null, null, null);
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+        _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("unavailable"));
+
+        var summary = await _sut.RefreshExampleSentencesAsync();
+
+        Assert.Equal(0, summary.Updated);
+        Assert.Equal(1, summary.Failed);
+        Assert.Contains("quorum", summary.FailedWords);
+    }
+
     public void Dispose() => _db.Dispose();
 }

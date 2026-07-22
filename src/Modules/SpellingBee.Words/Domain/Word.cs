@@ -39,6 +39,12 @@ public sealed class Word
         };
     }
 
+    public void UpdateExampleSentence(string exampleSentence)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(exampleSentence);
+        ExampleSentence = exampleSentence;
+    }
+
     public static string? JoinPartsOfSpeech(IReadOnlyList<string> parts) =>
         parts.Count == 0 ? null : string.Join(PartOfSpeechDelimiter, parts);
 

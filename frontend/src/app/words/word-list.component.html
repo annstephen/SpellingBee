@@ -29,12 +29,26 @@
           }
         </button>
 
+        <button mat-stroked-button (click)="refreshExampleSentences()" [disabled]="refreshingExampleSentences()">
+          @if (refreshingExampleSentences()) {
+            <mat-spinner diameter="18" style="display:inline-block; margin-right:6px;"></mat-spinner>
+            Refreshing…
+          } @else {
+            <mat-icon>format_quote</mat-icon>
+            Refresh example sentences
+          }
+        </button>
+
         @if (addWordError()) {
           <span class="add-word-error">{{ addWordError() }}</span>
         }
 
         @if (importResult()) {
           <span class="import-result">{{ importResult() }}</span>
+        }
+
+        @if (refreshResult()) {
+          <span class="import-result">{{ refreshResult() }}</span>
         }
       </div>
     </mat-card-content>

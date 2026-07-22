@@ -54,6 +54,8 @@ export class WordListComponent {
   readonly addWordError = signal<string | null>(null);
   readonly importResult = signal<string | null>(null);
   readonly importing = signal(false);
+  readonly refreshResult = signal<string | null>(null);
+  readonly refreshingExampleSentences = signal(false);
 
   readonly displayedColumns: string[] = [
     'select', 'text', 'partOfSpeech', 'definition', 'importedAt', 'audio', 'actions',
@@ -87,6 +89,19 @@ export class WordListComponent {
           : '';
         this.importResult.set(`Imported: ${result.imported}, Skipped: ${result.skipped}, Failed: ${result.failed}${failedDetail}`);
         input.value = '';
+        this.refresh$.next();
+      });
+  }
+
+  refreshExampleSentences(): void {
+    this.refreshingExampleSentences.set(true);
+    this.client.refreshExampleSentences()
+      .pipe(finalize(() => this.refreshingExampleSentences.set(false)))
+      .subscribe(result => {
+        const failedDetail = result.failedWords?.length
+          ? ` (${result.failedWords.join(', ')})`
+          : '';
+        this.refreshResult.set(`Updated: ${result.updated}, Skipped: ${result.skipped}, Failed: ${result.failed}${failedDetail}`);
         this.refresh$.next();
       });
   }

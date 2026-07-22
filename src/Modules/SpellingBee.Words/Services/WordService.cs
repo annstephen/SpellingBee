@@ -88,4 +88,42 @@ internal sealed class WordService : IWordService
     {
         await _db.Words.ExecuteDeleteAsync(ct);
     }
+
+    public async Task<ExampleSentenceRefreshSummary> RefreshExampleSentencesAsync(CancellationToken ct = default)
+    {
+        var words = await _db.Words.Where(w => w.ExampleSentence == null).ToListAsync(ct);
+
+        int updated = 0, skipped = 0, failed = 0;
+        var failedWords = new List<string>();
+
+        foreach (var word in words)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            WordLookupResult? lookup;
+            try
+            {
+                lookup = await _mwClient.LookupAsync(word.Text, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "M-W lookup failed for '{Word}'", word.Text);
+                failed++;
+                failedWords.Add(word.Text);
+                continue;
+            }
+
+            if (lookup?.ExampleSentence is null)
+            {
+                skipped++;
+                continue;
+            }
+
+            word.UpdateExampleSentence(lookup.ExampleSentence);
+            updated++;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return new ExampleSentenceRefreshSummary(updated, skipped, failed, failedWords);
+    }
 }

@@ -9,4 +9,5 @@ public interface IWordService
     Task<bool> DeleteAsync(int id, CancellationToken ct = default);
     Task DeleteManyAsync(IReadOnlyList<int> ids, CancellationToken ct = default);
     Task ClearAllAsync(CancellationToken ct = default);
+    Task<ExampleSentenceRefreshSummary> RefreshExampleSentencesAsync(CancellationToken ct = default);
 }
