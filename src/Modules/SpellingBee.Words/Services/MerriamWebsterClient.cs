@@ -6,11 +6,16 @@ namespace SpellingBee.Words.Services;
 
 internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
 {
+    private const string HeadwordPlaceholder = "_____";
+
     private readonly HttpClient _httpClient;
     private readonly MerriamWebsterOptions _options;
 
     [GeneratedRegex(@"\{[^}]+\}")]
     private static partial Regex MarkupPattern();
+
+    [GeneratedRegex(@"\{wi\}.*?\{/wi\}")]
+    private static partial Regex HeadwordPattern();
 
     public MerriamWebsterClient(HttpClient httpClient, IOptions<MerriamWebsterOptions> options)
     {
@@ -36,7 +41,20 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
         if (first.ValueKind == JsonValueKind.String)
             return null;
 
-        var partOfSpeech = first.TryGetProperty("fl", out var fl) ? fl.GetString() : null;
+        var partsOfSpeech = new List<string>();
+        foreach (var entry in root.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object) continue;
+            if (entry.TryGetProperty("fl", out var entryFl))
+            {
+                var flValue = entryFl.GetString();
+                if (!string.IsNullOrWhiteSpace(flValue) &&
+                    !partsOfSpeech.Contains(flValue, StringComparer.OrdinalIgnoreCase))
+                {
+                    partsOfSpeech.Add(flValue);
+                }
+            }
+        }
 
         string? definition = null;
         if (first.TryGetProperty("shortdef", out var shortdef) && shortdef.GetArrayLength() > 0)
@@ -52,6 +70,14 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
                 if (raw is not null)
                     etymology = MarkupPattern().Replace(raw, string.Empty).Trim();
             }
+        }
+
+        string? exampleSentence = null;
+        if (first.TryGetProperty("def", out var def))
+        {
+            var rawVis = FindFirstVisText(def);
+            if (rawVis is not null)
+                exampleSentence = ObscureExampleSentence(rawVis);
         }
 
         string? audioKey = null;
@@ -79,13 +105,68 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
                     var baseResult = await LookupAsync(baseWord, ct);
                     definition ??= baseResult?.Definition;
                     etymology ??= baseResult?.Etymology;
-                    partOfSpeech ??= baseResult?.PartOfSpeech;
+                    exampleSentence ??= baseResult?.ExampleSentence;
                     audioKey ??= baseResult?.AudioKey;
+                    if (partsOfSpeech.Count == 0 && baseResult?.PartOfSpeech.Count > 0)
+                        partsOfSpeech.AddRange(baseResult.PartOfSpeech);
                 }
             }
         }
 
-        return new WordLookupResult(partOfSpeech, definition, etymology, audioKey);
+        return new WordLookupResult(partsOfSpeech, definition, etymology, audioKey, exampleSentence);
+    }
+
+    // Recursively scans M-W's `def[].sseq` sense tree for the first `["vis", [{ "t": "..." }]]`
+    // entry under a `dt` array. A recursive scan is used instead of a hardcoded index path
+    // because sense nesting depth varies across headwords/homographs.
+    internal static string? FindFirstVisText(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Array:
+                foreach (var item in element.EnumerateArray())
+                {
+                    var found = FindFirstVisText(item);
+                    if (found is not null) return found;
+                }
+                return null;
+
+            case JsonValueKind.Object:
+                if (element.TryGetProperty("dt", out var dt) && dt.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var pair in dt.EnumerateArray())
+                    {
+                        if (pair.ValueKind == JsonValueKind.Array && pair.GetArrayLength() > 1 &&
+                            pair[0].ValueKind == JsonValueKind.String &&
+                            pair[0].GetString() == "vis" &&
+                            pair[1].ValueKind == JsonValueKind.Array &&
+                            pair[1].GetArrayLength() > 0 &&
+                            pair[1][0].TryGetProperty("t", out var t))
+                        {
+                            var text = t.GetString();
+                            if (!string.IsNullOrWhiteSpace(text)) return text;
+                        }
+                    }
+                }
+                foreach (var prop in element.EnumerateObject())
+                {
+                    var found = FindFirstVisText(prop.Value);
+                    if (found is not null) return found;
+                }
+                return null;
+
+            default:
+                return null;
+        }
+    }
+
+    // Replaces the {wi}headword{/wi} occurrence(s) with a fixed, length-independent placeholder
+    // before stripping remaining markup, so other tags ({it}, {b}, ...) elsewhere in the
+    // sentence are still cleaned by MarkupPattern.
+    internal static string ObscureExampleSentence(string rawVisText)
+    {
+        var obscured = HeadwordPattern().Replace(rawVisText, HeadwordPlaceholder);
+        return MarkupPattern().Replace(obscured, string.Empty).Trim();
     }
 
     internal static string GetAudioSubdir(string key)

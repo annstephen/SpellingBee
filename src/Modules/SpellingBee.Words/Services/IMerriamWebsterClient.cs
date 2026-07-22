@@ -6,7 +6,8 @@ public interface IMerriamWebsterClient
 }
 
 public sealed record WordLookupResult(
-    string? PartOfSpeech,
+    IReadOnlyList<string> PartOfSpeech,
     string? Definition,
     string? Etymology,
-    string? AudioKey);
+    string? AudioKey,
+    string? ExampleSentence = null);

@@ -11,7 +11,7 @@ using SpellingBee.Words.Data;
 namespace SpellingBee.Words.Migrations
 {
     [DbContext(typeof(WordsDbContext))]
-    [Migration("20260523211213_InitialCreate")]
+    [Migration("20260722022925_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -42,11 +42,15 @@ namespace SpellingBee.Words.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ExampleSentence")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("ImportedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PartOfSpeech")
-                        .HasMaxLength(100)
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")

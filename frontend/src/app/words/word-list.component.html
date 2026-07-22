@@ -78,7 +78,7 @@
 
         <ng-container matColumnDef="partOfSpeech">
           <th mat-header-cell *matHeaderCellDef>Part of Speech</th>
-          <td mat-cell *matCellDef="let word">{{ word.partOfSpeech ?? '—' }}</td>
+          <td mat-cell *matCellDef="let word">{{ word.partOfSpeech.length ? word.partOfSpeech.join(', ') : '—' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="definition">

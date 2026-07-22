@@ -99,6 +99,14 @@
             </button>
             <button
               mat-icon-button
+              [disabled]="!currentWord()?.partOfSpeech?.length"
+              (click)="togglePartOfSpeech()"
+              matTooltip="Show part of speech"
+            >
+              <mat-icon>label</mat-icon>
+            </button>
+            <button
+              mat-icon-button
               [disabled]="!currentWord()?.definition"
               (click)="toggleMeaning()"
               matTooltip="Show meaning"
@@ -113,8 +121,20 @@
             >
               <mat-icon>language</mat-icon>
             </button>
+            <button
+              mat-icon-button
+              [disabled]="!currentWord()?.exampleSentence"
+              (click)="toggleSentence()"
+              matTooltip="Show example sentence"
+            >
+              <mat-icon>format_quote</mat-icon>
+            </button>
             <span class="hint">Listen, then type the word</span>
           </div>
+
+          @if (partOfSpeechVisible() && currentWord()?.partOfSpeech?.length) {
+            <p class="word-info"><strong>Part of Speech:</strong> {{ currentWord()?.partOfSpeech?.join(', ') }}</p>
+          }
 
           @if (meaningVisible() && currentWord()?.definition) {
             <p class="word-info"><strong>Meaning:</strong> {{ currentWord()?.definition }}</p>
@@ -122,6 +142,10 @@
 
           @if (originVisible() && currentWord()?.origin) {
             <p class="word-info"><strong>Origin:</strong> {{ currentWord()?.origin }}</p>
+          }
+
+          @if (sentenceVisible() && currentWord()?.exampleSentence) {
+            <p class="word-info"><strong>Example:</strong> {{ currentWord()?.exampleSentence }}</p>
           }
 
           <!-- Voice input UI is hidden for now; replaced by a typed word field below.

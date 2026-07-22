@@ -31,7 +31,7 @@ public sealed class WordImportServiceTests : IDisposable
     public async Task ImportAsync_ValidWord_CountsAsImported()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult("adjective", "lasting a very short time", "Greek ephemeros", "epheme02"));
+            .Returns(new WordLookupResult(["adjective"], "lasting a very short time", "Greek ephemeros", "epheme02"));
         _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
             .Returns("e/epheme02.mp3");
 
@@ -47,7 +47,7 @@ public sealed class WordImportServiceTests : IDisposable
     public async Task ImportAsync_DuplicateWord_CountsAsSkipped()
     {
         _mwClient.LookupAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult("adjective", "a definition", null, null));
+            .Returns(new WordLookupResult(["adjective"], "a definition", null, null));
 
         await _sut.ImportAsync(ToCsvStream("ephemeral"));
         var summary = await _sut.ImportAsync(ToCsvStream("ephemeral"));
@@ -94,7 +94,7 @@ public sealed class WordImportServiceTests : IDisposable
     public async Task ImportAsync_AudioDownloadFails_StillImportsWord()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult("adjective", "a definition", null, "epheme02"));
+            .Returns(new WordLookupResult(["adjective"], "a definition", null, "epheme02"));
         _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("audio unavailable"));
 

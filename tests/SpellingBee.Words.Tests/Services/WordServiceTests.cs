@@ -31,14 +31,14 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_ValidWord_ReturnsWordResponse()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult("adjective", "lasting a very short time", "Greek ephemeros", "epheme02"));
+            .Returns(new WordLookupResult(["adjective"], "lasting a very short time", "Greek ephemeros", "epheme02"));
         _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
             .Returns("e/epheme02.mp3");
 
         var result = await _sut.AddWordAsync("ephemeral");
 
         Assert.Equal("ephemeral", result.Text);
-        Assert.Equal("adjective", result.PartOfSpeech);
+        Assert.Equal(["adjective"], result.PartOfSpeech);
         Assert.Equal("lasting a very short time", result.Definition);
         Assert.Equal("epheme02", result.AudioKey);
         Assert.True(result.Id > 0);
@@ -49,7 +49,7 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_NormalisesTextToLowercase()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(null, null, null, null));
+            .Returns(new WordLookupResult([], null, null, null));
 
         var result = await _sut.AddWordAsync("  Ephemeral  ");
 
@@ -60,7 +60,7 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_DuplicateWord_ThrowsInvalidOperation()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(null, null, null, null));
+            .Returns(new WordLookupResult([], null, null, null));
         await _sut.AddWordAsync("ephemeral");
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.AddWordAsync("ephemeral"));
@@ -83,7 +83,7 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_AudioDownloadFails_StillSavesWord()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult("adjective", "a definition", null, "epheme02"));
+            .Returns(new WordLookupResult(["adjective"], "a definition", null, "epheme02"));
         _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("audio unavailable"));
 

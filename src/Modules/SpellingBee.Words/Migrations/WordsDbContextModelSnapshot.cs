@@ -39,11 +39,15 @@ namespace SpellingBee.Words.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ExampleSentence")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("ImportedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PartOfSpeech")
-                        .HasMaxLength(100)
+                        .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")

@@ -83,7 +83,8 @@ internal sealed class WordImportService : IWordImportService
                 }
             }
 
-            var word = Word.Create(normalized, lookup.PartOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath);
+            var partOfSpeech = Word.JoinPartsOfSpeech(lookup.PartOfSpeech);
+            var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath, lookup.ExampleSentence);
             _db.Words.Add(word);
 
             try

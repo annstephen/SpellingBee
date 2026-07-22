@@ -346,10 +346,11 @@ export interface ImportSummary {
 export interface WordResponse {
     id: number;
     text: string;
-    partOfSpeech: string | undefined;
+    partOfSpeech: string[];
     definition: string | undefined;
     etymology: string | undefined;
     origin: string | undefined;
+    exampleSentence: string | undefined;
     audioKey: string | undefined;
     importedAt: Date;
 

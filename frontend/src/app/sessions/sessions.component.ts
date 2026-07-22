@@ -53,6 +53,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
   readonly feedbackVisible = signal(false);
   readonly meaningVisible = signal(false);
   readonly originVisible = signal(false);
+  readonly sentenceVisible = signal(false);
+  readonly partOfSpeechVisible = signal(false);
 
   readonly currentWord = computed(() => {
     const s = this.session();
@@ -124,6 +126,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.feedbackVisible.set(false);
     this.meaningVisible.set(false);
     this.originVisible.set(false);
+    this.sentenceVisible.set(false);
+    this.partOfSpeechVisible.set(false);
     await this.sessionService.save(state);
 
     this.playCurrentWord();
@@ -136,6 +140,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.typedWord.set('');
     this.meaningVisible.set(false);
     this.originVisible.set(false);
+    this.sentenceVisible.set(false);
+    this.partOfSpeechVisible.set(false);
     this.playCurrentWord();
     // this.startListening();
     this.phase.set('playing');
@@ -166,6 +172,14 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.originVisible.update(v => !v);
   }
 
+  toggleSentence(): void {
+    this.sentenceVisible.update(v => !v);
+  }
+
+  togglePartOfSpeech(): void {
+    this.partOfSpeechVisible.update(v => !v);
+  }
+
   async submitWord(): Promise<void> {
     if (this.feedbackVisible() || !this.typedWord().trim()) return;
     await this.evaluateWord(this.typedWord().trim());
@@ -194,6 +208,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.feedbackVisible.set(false);
     this.meaningVisible.set(false);
     this.originVisible.set(false);
+    this.sentenceVisible.set(false);
+    this.partOfSpeechVisible.set(false);
     await this.sessionService.save(updated);
     this.playCurrentWord();
   }
@@ -205,6 +221,8 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.feedbackVisible.set(false);
     this.meaningVisible.set(false);
     this.originVisible.set(false);
+    this.sentenceVisible.set(false);
+    this.partOfSpeechVisible.set(false);
     await this.loadWordCount();
     this.phase.set('configure');
   }

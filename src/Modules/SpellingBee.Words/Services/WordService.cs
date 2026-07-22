@@ -29,11 +29,7 @@ internal sealed class WordService : IWordService
     public async Task<IReadOnlyList<WordResponse>> GetAllAsync(CancellationToken ct = default)
     {
         var words = await _db.Words.ToListAsync(ct);
-        return words
-            .Select(w => new WordResponse(
-                w.Id, w.Text, w.PartOfSpeech, w.Definition, w.Etymology,
-                EtymologyOriginParser.ExtractOrigin(w.Etymology), w.AudioKey, w.ImportedAt))
-            .ToList();
+        return words.Select(ToResponse).ToList();
     }
 
     public async Task<WordResponse> AddWordAsync(string text, CancellationToken ct = default)
@@ -60,14 +56,17 @@ internal sealed class WordService : IWordService
             }
         }
 
-        var word = Word.Create(normalized, lookup.PartOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath);
+        var partOfSpeech = Word.JoinPartsOfSpeech(lookup.PartOfSpeech);
+        var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath, lookup.ExampleSentence);
         _db.Words.Add(word);
         await _db.SaveChangesAsync(ct);
 
-        return new WordResponse(
-            word.Id, word.Text, word.PartOfSpeech, word.Definition, word.Etymology,
-            EtymologyOriginParser.ExtractOrigin(word.Etymology), word.AudioKey, word.ImportedAt);
+        return ToResponse(word);
     }
+
+    private static WordResponse ToResponse(Word w) => new(
+        w.Id, w.Text, Word.SplitPartsOfSpeech(w.PartOfSpeech), w.Definition, w.Etymology,
+        EtymologyOriginParser.ExtractOrigin(w.Etymology), w.ExampleSentence, w.AudioKey, w.ImportedAt);
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
