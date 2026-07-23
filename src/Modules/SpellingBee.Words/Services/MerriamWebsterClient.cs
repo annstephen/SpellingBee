@@ -77,7 +77,7 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
         {
             var rawVis = FindFirstVisText(def);
             if (rawVis is not null)
-                exampleSentence = ObscureExampleSentence(rawVis);
+                exampleSentence = ObscureExampleSentence(rawVis, GetKnownForms(first, word));
         }
 
         string? audioKey = null;
@@ -162,11 +162,55 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
 
     // Replaces the {wi}headword{/wi} occurrence(s) with a fixed, length-independent placeholder
     // before stripping remaining markup, so other tags ({it}, {b}, ...) elsewhere in the
-    // sentence are still cleaned by MarkupPattern.
-    internal static string ObscureExampleSentence(string rawVisText)
+    // sentence are still cleaned by MarkupPattern. M-W doesn't tag every inflected occurrence
+    // of the headword with {wi} (e.g. irregular past tenses, e-drop/consonant-doubling forms
+    // are often left untagged), so any remaining known forms are obscured as a fallback pass.
+    internal static string ObscureExampleSentence(string rawVisText, IReadOnlyCollection<string>? knownForms = null)
     {
         var obscured = HeadwordPattern().Replace(rawVisText, HeadwordPlaceholder);
-        return MarkupPattern().Replace(obscured, string.Empty).Trim();
+        obscured = MarkupPattern().Replace(obscured, string.Empty).Trim();
+
+        if (knownForms is { Count: > 0 })
+        {
+            var pattern = string.Join('|', knownForms
+                .Where(f => !string.IsNullOrWhiteSpace(f))
+                .Select(Regex.Escape)
+                .OrderByDescending(f => f.Length));
+            if (pattern.Length > 0)
+                obscured = Regex.Replace(obscured, $@"\b(?:{pattern})\b", HeadwordPlaceholder, RegexOptions.IgnoreCase);
+        }
+
+        return obscured;
+    }
+
+    // Collects known spellings of the headword (the lookup term, the dictionary's own
+    // headword, and any listed inflections) so ObscureExampleSentence can catch occurrences
+    // M-W didn't tag with {wi}. Syllable-break markers ('*') are stripped from hw/ins forms.
+    internal static IReadOnlyCollection<string> GetKnownForms(JsonElement entry, string word)
+    {
+        var forms = new List<string> { word };
+
+        if (entry.TryGetProperty("hwi", out var hwi) && hwi.TryGetProperty("hw", out var hw))
+        {
+            var hwValue = hw.GetString();
+            if (hwValue is not null)
+                forms.Add(hwValue.Replace("*", string.Empty));
+        }
+
+        if (entry.TryGetProperty("ins", out var ins) && ins.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var inflection in ins.EnumerateArray())
+            {
+                if (inflection.TryGetProperty("if", out var ifElement))
+                {
+                    var ifValue = ifElement.GetString();
+                    if (ifValue is not null)
+                        forms.Add(ifValue.Replace("*", string.Empty));
+                }
+            }
+        }
+
+        return forms;
     }
 
     internal static string GetAudioSubdir(string key)
