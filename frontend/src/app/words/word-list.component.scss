@@ -47,26 +47,34 @@
 
   .mat-column-select,
   .mat-column-actions {
-    width: 56px;
+    flex: 0 0 56px;
     text-align: center;
   }
 
   .mat-column-audio {
-    width: 80px;
+    flex: 0 0 80px;
     text-align: center;
   }
 
   .mat-column-importedAt {
-    width: 130px;
+    flex: 0 0 130px;
     white-space: nowrap;
   }
 
-  .mat-column-partOfSpeech {
-    width: 140px;
+  .mat-column-text {
+    flex: 1 1 90px;
+    min-width: 90px;
   }
 
-  .mat-column-definition {
-    max-width: 300px;
+  .mat-column-partOfSpeech {
+    flex: 1 1 120px;
+    min-width: 100px;
+  }
+
+  .mat-column-definition,
+  .mat-column-exampleSentence {
+    flex: 2 1 180px;
+    min-width: 140px;
     white-space: normal;
     word-break: break-word;
   }

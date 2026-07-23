@@ -58,7 +58,7 @@ export class WordListComponent {
   readonly refreshingExampleSentences = signal(false);
 
   readonly displayedColumns: string[] = [
-    'select', 'text', 'partOfSpeech', 'definition', 'importedAt', 'audio', 'actions',
+    'select', 'text', 'partOfSpeech', 'definition', 'exampleSentence', 'importedAt', 'audio', 'actions',
   ];
 
   addWord(): void {
