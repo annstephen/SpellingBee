@@ -259,6 +259,12 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.session.set(updated);
     await this.sessionService.save(updated);
     this.feedbackVisible.set(true);
+
+    try {
+      await firstValueFrom(this.wordsClient.recordAttempt({ wordId: word.id, correct }));
+    } catch (err) {
+      console.error('[SessionsComponent] Failed to record word progress:', err);
+    }
   }
 
   private shuffle<T>(arr: T[]): T[] {

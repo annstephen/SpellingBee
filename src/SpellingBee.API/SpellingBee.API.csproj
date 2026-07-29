@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Modules\SpellingBee.Progress\SpellingBee.Progress.csproj" />
     <ProjectReference Include="..\Modules\SpellingBee.Words\SpellingBee.Words.csproj" />
   </ItemGroup>
 

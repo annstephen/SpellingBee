@@ -28,6 +28,169 @@ export class WordsClient {
     /**
      * @return OK
      */
+    recordAttempt(body: RecordAttemptRequest): Observable<WordProgressResponse> {
+        let url_ = this.baseUrl + "/api/Progress/attempts";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRecordAttempt(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRecordAttempt(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WordProgressResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WordProgressResponse>;
+        }));
+    }
+
+    protected processRecordAttempt(response: HttpResponseBase): Observable<WordProgressResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WordProgressResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAllProgress(): Observable<WordProgressResponse[]> {
+        let url_ = this.baseUrl + "/api/Progress";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAllProgress(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAllProgress(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WordProgressResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WordProgressResponse[]>;
+        }));
+    }
+
+    protected processGetAllProgress(response: HttpResponseBase): Observable<WordProgressResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WordProgressResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getProgressForWord(wordId: number): Observable<WordProgressResponse> {
+        let url_ = this.baseUrl + "/api/Progress/{wordId}";
+        if (wordId === undefined || wordId === null)
+            throw new globalThis.Error("The parameter 'wordId' must be defined.");
+        url_ = url_.replace("{wordId}", encodeURIComponent("" + wordId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProgressForWord(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProgressForWord(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<WordProgressResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<WordProgressResponse>;
+        }));
+    }
+
+    protected processGetProgressForWord(response: HttpResponseBase): Observable<WordProgressResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WordProgressResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     getAllWords(): Observable<WordResponse[]> {
         let url_ = this.baseUrl + "/api/Words";
         url_ = url_.replace(/[?&]$/, "");
@@ -433,6 +596,23 @@ export interface ProblemDetails {
     status?: number | undefined;
     detail?: string | undefined;
     instance?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface RecordAttemptRequest {
+    wordId: number;
+    correct: boolean;
+
+    [key: string]: any;
+}
+
+export interface WordProgressResponse {
+    wordId: number;
+    attemptCount: number;
+    correctCount: number;
+    incorrectCount: number;
+    lastAttemptAt: Date | undefined;
 
     [key: string]: any;
 }

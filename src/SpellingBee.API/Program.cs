@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using SpellingBee.Progress;
+using SpellingBee.Progress.Data;
 using SpellingBee.Words;
 using SpellingBee.Words.Data;
 
@@ -14,12 +16,14 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddWordsModule(builder.Configuration);
+builder.Services.AddProgressModule(builder.Configuration);
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<WordsDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<ProgressDbContext>().Database.MigrateAsync();
 }
 
 if (app.Environment.IsDevelopment())
