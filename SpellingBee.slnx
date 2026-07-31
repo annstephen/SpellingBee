@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/SpellingBee.API/SpellingBee.API.csproj" />
+    <Project Path="src/SpellingBee.Desktop/SpellingBee.Desktop.csproj" />
     <Project Path="src/SpellingBee.Shared/SpellingBee.Shared.csproj" />
   </Folder>
   <Folder Name="/src/Modules/">
