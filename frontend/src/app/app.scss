@@ -6,3 +6,28 @@
 .toolbar-spacer {
   flex: 1 1 auto;
 }
+
+.mastery-summary {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--mat-sys-outline);
+}
+
+.mastery-count {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.mastery-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mastery-square {
+  width: 14px;
+  height: 14px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline) 35%, transparent);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}

@@ -7,4 +7,19 @@
   <!-- <a mat-button routerLink="/calibrate">Calibrate Voice</a> -->
 </mat-toolbar>
 
+@if (totalWords() > 0) {
+  <section class="mastery-summary">
+    <p class="mastery-count">{{ masteredCount() }} / {{ totalWords() }} words mastered</p>
+    <div class="mastery-grid">
+      @for (m of wordMastery(); track m.word.id) {
+        <div
+          class="mastery-square"
+          [style.background-color]="masteryColor(m.score)"
+          [title]="masteryTooltip(m)"
+        ></div>
+      }
+    </div>
+  </section>
+}
+
 <router-outlet />

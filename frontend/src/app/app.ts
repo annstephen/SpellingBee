@@ -1,7 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { forkJoin, switchMap, timer } from 'rxjs';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { WordsClient, WordResponse, WordProgressResponse } from './api/api.generated';
+
+interface WordMastery {
+  word: WordResponse;
+  status: 'unattempted' | 'in-progress' | 'mastered';
+  score: number;
+  progress: WordProgressResponse | undefined;
+}
 
 @Component({
   selector: 'app-root',
@@ -9,4 +19,64 @@ import { MatButtonModule } from '@angular/material/button';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {}
+export class App {
+  private readonly wordsClient = inject(WordsClient);
+
+  private readonly wordsAndProgress = toSignal(
+    timer(0, 5000).pipe(
+      switchMap(() =>
+        forkJoin({
+          words: this.wordsClient.getAllWords(),
+          progress: this.wordsClient.getAllProgress(),
+        })
+      )
+    ),
+    { initialValue: { words: [] as WordResponse[], progress: [] as WordProgressResponse[] } }
+  );
+
+  readonly totalWords = computed(() => this.wordsAndProgress().words.length);
+
+  readonly wordMastery = computed<WordMastery[]>(() => {
+    const { words, progress } = this.wordsAndProgress();
+    const progressByWordId = new Map(progress.map(p => [p.wordId, p]));
+
+    const items = words.map(word => {
+      const p = progressByWordId.get(word.id);
+      if (!p || p.attemptCount === 0) {
+        return { word, status: 'unattempted' as const, score: 0, progress: p };
+      }
+      const accuracy = p.correctCount / p.attemptCount;
+      const mastered = p.attemptCount > 10 && accuracy > 0.9;
+      // Floor of 0.15 so any attempted word is visibly distinct from an
+      // unattempted (pure white) one, even before accuracy/volume build up.
+      const score = mastered
+        ? 1
+        : Math.min(0.15 + 0.75 * accuracy * Math.min(p.attemptCount / 5, 1), 0.95);
+      return { word, status: mastered ? ('mastered' as const) : ('in-progress' as const), score, progress: p };
+    });
+
+    // Attempted words (in-progress or mastered) first, unattempted last.
+    return items.sort((a, b) => {
+      const aAttempted = a.status !== 'unattempted';
+      const bAttempted = b.status !== 'unattempted';
+      return aAttempted === bAttempted ? 0 : aAttempted ? -1 : 1;
+    });
+  });
+
+  readonly masteredCount = computed(
+    () => this.wordMastery().filter(m => m.status === 'mastered').length
+  );
+
+  masteryColor(score: number): string {
+    const r = Math.round(255 + (76 - 255) * score);
+    const g = Math.round(255 + (175 - 255) * score);
+    const b = Math.round(255 + (80 - 255) * score);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  masteryTooltip(m: WordMastery): string {
+    const attempts = m.progress?.attemptCount ?? 0;
+    const correct = m.progress?.correctCount ?? 0;
+    return `${m.word.text} — ${correct}/${attempts} correct`;
+  }
+}
