@@ -21,4 +21,11 @@
     <ProjectReference Include="..\Modules\SpellingBee.Words\SpellingBee.Words.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Dev-only secrets file (gitignored). Never publish it in cleartext next to the exe;
+         appsettings.Development.json isn't even loaded by the packaged desktop app, which
+         always runs as Production - see Program.cs for the %LOCALAPPDATA%\SpellingBee overlay. -->
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>

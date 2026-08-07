@@ -21,6 +21,14 @@ public static class ApiHost
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SpellingBee");
         Directory.CreateDirectory(appDataRoot);
+
+        // Per-machine overlay for secrets (e.g. MerriamWebster:ApiKey) that can't be committed
+        // to source control. Lives outside the install/publish directory so it survives
+        // upgrades and reinstalls, and loads regardless of ASPNETCORE_ENVIRONMENT so it works
+        // for the packaged desktop app (which always runs as Production) as well as `dotnet run`.
+        builder.Configuration.AddJsonFile(
+            Path.Combine(appDataRoot, "appsettings.Local.json"), optional: true, reloadOnChange: false);
+
         var dbPath = Path.Combine(appDataRoot, "spellingbee.db");
         builder.Configuration["ConnectionStrings:WordsDb"] = $"Data Source={dbPath}";
         builder.Configuration["ConnectionStrings:ProgressDb"] = $"Data Source={dbPath}";

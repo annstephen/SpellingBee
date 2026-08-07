@@ -45,3 +45,21 @@ The API will be available at `https://localhost:5001` (or the port shown in the 
 ```bash
 dotnet test
 ```
+
+## Configuration
+
+Non-secret defaults live in [`src/SpellingBee.API/appsettings.json`](src/SpellingBee.API/appsettings.json). For local `dotnet run`/debugging, developer overrides (like a real `MerriamWebster:ApiKey`) go in a gitignored `src/SpellingBee.API/appsettings.Development.json`.
+
+The packaged desktop app (`SpellingBee.Desktop`) always runs as `Production`, so it never reads `appsettings.Development.json`. Instead it loads an optional per-machine overlay file at:
+
+```
+%LOCALAPPDATA%\SpellingBee\appsettings.Local.json
+```
+
+e.g.
+
+```json
+{ "MerriamWebster": { "ApiKey": "<your key>" } }
+```
+
+This file is never committed and lives outside the install directory, so it survives reinstalls/upgrades — the same folder already used for the SQLite DB and audio cache. The app runs fine without it; dictionary lookups just won't resolve. A future installer doesn't need to embed or prompt for secrets — this file is set once per machine.
