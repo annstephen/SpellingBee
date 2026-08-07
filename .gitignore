@@ -35,6 +35,7 @@ coverage/
 # Published output
 publish/
 src/SpellingBee.Desktop/wwwroot/
+installer/output/
 
 # Secrets and local config
 appsettings.local.json

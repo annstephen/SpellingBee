@@ -62,4 +62,22 @@ e.g.
 { "MerriamWebster": { "ApiKey": "<your key>" } }
 ```
 
-This file is never committed and lives outside the install directory, so it survives reinstalls/upgrades — the same folder already used for the SQLite DB and audio cache. The app runs fine without it; dictionary lookups just won't resolve. A future installer doesn't need to embed or prompt for secrets — this file is set once per machine.
+This file is never committed and lives outside the install directory, so it survives reinstalls/upgrades — the same folder already used for the SQLite DB and audio cache. The app runs fine without it; dictionary lookups just won't resolve. The installer doesn't need to embed or prompt for secrets — this file is set once per machine.
+
+## Build the Installer
+
+Packages the desktop app into a single `SpellingBeeSetup-<version>.exe` that installs to Program Files, adds a Start Menu shortcut (and an optional Desktop shortcut), and registers an uninstaller in "Apps & Features".
+
+### Prerequisite
+
+- [Inno Setup 6](https://jrsoftware.org/isinfo.php): `winget install JRSoftware.InnoSetup`
+
+### Build
+
+```powershell
+.\build-installer.ps1
+```
+
+This runs `build-desktop.ps1` to refresh `publish\`, then compiles [`installer\SpellingBee.iss`](installer/SpellingBee.iss) with Inno Setup. The resulting installer lands at `installer\output\SpellingBeeSetup-<version>.exe`. The app version comes from `<Version>` in [`src/SpellingBee.Desktop/SpellingBee.Desktop.csproj`](src/SpellingBee.Desktop/SpellingBee.Desktop.csproj) — bump it there before cutting a release.
+
+The installer checks for the Microsoft Edge WebView2 Runtime on first run and offers to download/install it if missing. Uninstalling removes the install directory but leaves `%LOCALAPPDATA%\SpellingBee\` (SQLite DB, audio cache, config overlay) in place.
