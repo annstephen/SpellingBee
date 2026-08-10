@@ -15,6 +15,7 @@
 #define MyAppPublisher "SpellingBee"
 #define MyAppExeName "SpellingBee.Desktop.exe"
 #define PublishDir "..\publish"
+#define AppIconFile "..\src\SpellingBee.Desktop\Assets\AppIcon.ico"
 
 [Setup]
 ; This GUID identifies the app across versions. Do not change it — Inno Setup uses it
@@ -34,6 +35,7 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
+SetupIconFile={#AppIconFile}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
