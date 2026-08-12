@@ -1,39 +1,28 @@
 using Microsoft.Extensions.Options;
-using SpellingBee.Words.Services;
 
 namespace SpellingBee.Words.Infrastructure;
 
 internal sealed class AudioFileStore : IAudioFileStore
 {
-    private readonly HttpClient _httpClient;
     private readonly string _rootPath;
-    private readonly string _audioBaseUrl;
 
-    public AudioFileStore(
-        HttpClient httpClient,
-        IOptions<AudioStorageOptions> storageOptions,
-        IOptions<MerriamWebsterOptions> mwOptions)
+    public AudioFileStore(IOptions<AudioStorageOptions> storageOptions)
     {
-        _httpClient = httpClient;
         _rootPath = storageOptions.Value.RootPath;
-        _audioBaseUrl = mwOptions.Value.AudioBaseUrl;
     }
 
-    public async Task<string> DownloadAsync(string audioKey, CancellationToken ct = default)
+    public async Task<string> SaveAsync(string wordText, byte[] audioBytes, CancellationToken ct = default)
     {
-        var subdir = MerriamWebsterClient.GetAudioSubdir(audioKey);
-        var relativePath = $"{subdir}/{audioKey}.mp3";
-        var localPath = Path.Combine(_rootPath, subdir, $"{audioKey}.mp3");
-
-        if (File.Exists(localPath))
-            return relativePath;
+        var subdir = GetAudioSubdir(wordText);
+        var relativePath = $"{subdir}/{wordText}.mp3";
+        var localPath = Path.Combine(_rootPath, subdir, $"{wordText}.mp3");
 
         Directory.CreateDirectory(Path.Combine(_rootPath, subdir));
-
-        var url = $"{_audioBaseUrl}{subdir}/{audioKey}.mp3";
-        var bytes = await _httpClient.GetByteArrayAsync(url, ct);
-        await File.WriteAllBytesAsync(localPath, bytes, ct);
+        await File.WriteAllBytesAsync(localPath, audioBytes, ct);
 
         return relativePath;
     }
+
+    internal static string GetAudioSubdir(string wordText) =>
+        char.IsLetter(wordText[0]) ? wordText[0].ToString().ToLowerInvariant() : "number";
 }

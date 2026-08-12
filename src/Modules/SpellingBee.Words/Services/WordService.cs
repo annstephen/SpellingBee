@@ -11,17 +11,20 @@ internal sealed class WordService : IWordService
 {
     private readonly WordsDbContext _db;
     private readonly IMerriamWebsterClient _mwClient;
+    private readonly ITextToSpeechClient _ttsClient;
     private readonly IAudioFileStore _audioStore;
     private readonly ILogger<WordService> _logger;
 
     public WordService(
         WordsDbContext db,
         IMerriamWebsterClient mwClient,
+        ITextToSpeechClient ttsClient,
         IAudioFileStore audioStore,
         ILogger<WordService> logger)
     {
         _db = db;
         _mwClient = mwClient;
+        _ttsClient = ttsClient;
         _audioStore = audioStore;
         _logger = logger;
     }
@@ -44,20 +47,18 @@ internal sealed class WordService : IWordService
             throw new InvalidOperationException($"Word '{normalized}' not found in Merriam-Webster.");
 
         string? audioFilePath = null;
-        if (lookup.AudioKey is not null)
+        try
         {
-            try
-            {
-                audioFilePath = await _audioStore.DownloadAsync(lookup.AudioKey, ct);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Audio download failed for '{Word}' (key: {Key})", normalized, lookup.AudioKey);
-            }
+            var audioBytes = await _ttsClient.SynthesizeAsync(normalized, ct);
+            audioFilePath = await _audioStore.SaveAsync(normalized, audioBytes, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Audio synthesis failed for '{Word}'", normalized);
         }
 
         var partOfSpeech = Word.JoinPartsOfSpeech(lookup.PartOfSpeech);
-        var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath, lookup.ExampleSentence);
+        var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, audioFilePath, lookup.ExampleSentence);
         _db.Words.Add(word);
         await _db.SaveChangesAsync(ct);
 
@@ -66,7 +67,7 @@ internal sealed class WordService : IWordService
 
     private static WordResponse ToResponse(Word w) => new(
         w.Id, w.Text, Word.SplitPartsOfSpeech(w.PartOfSpeech), w.Definition, w.Etymology,
-        EtymologyOriginParser.ExtractOrigin(w.Etymology), w.ExampleSentence, w.AudioKey, w.ImportedAt);
+        EtymologyOriginParser.ExtractOrigin(w.Etymology), w.ExampleSentence, w.AudioFilePath, w.ImportedAt);
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
@@ -125,5 +126,35 @@ internal sealed class WordService : IWordService
 
         await _db.SaveChangesAsync(ct);
         return new ExampleSentenceRefreshSummary(updated, skipped, failed, failedWords);
+    }
+
+    public async Task<AudioRegenerateSummary> RegenerateAudioAsync(CancellationToken ct = default)
+    {
+        var words = await _db.Words.ToListAsync(ct);
+
+        int updated = 0, failed = 0;
+        var failedWords = new List<string>();
+
+        foreach (var word in words)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                var audioBytes = await _ttsClient.SynthesizeAsync(word.Text, ct);
+                var audioFilePath = await _audioStore.SaveAsync(word.Text, audioBytes, ct);
+                word.UpdateAudio(audioFilePath);
+                updated++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Audio synthesis failed for '{Word}'", word.Text);
+                failed++;
+                failedWords.Add(word.Text);
+            }
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return new AudioRegenerateSummary(updated, failed, failedWords);
     }
 }

@@ -10,7 +10,6 @@ public sealed class Word
     public string? Definition { get; private set; }
     public string? Etymology { get; private set; }
     public string? ExampleSentence { get; private set; }
-    public string? AudioKey { get; private set; }
     public string? AudioFilePath { get; private set; }
     public DateTimeOffset ImportedAt { get; private set; }
 
@@ -21,7 +20,6 @@ public sealed class Word
         string? partOfSpeech,
         string? definition,
         string? etymology,
-        string? audioKey,
         string? audioFilePath,
         string? exampleSentence = null)
     {
@@ -33,7 +31,6 @@ public sealed class Word
             Definition = definition,
             Etymology = etymology,
             ExampleSentence = exampleSentence,
-            AudioKey = audioKey,
             AudioFilePath = audioFilePath,
             ImportedAt = DateTimeOffset.UtcNow
         };
@@ -43,6 +40,12 @@ public sealed class Word
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(exampleSentence);
         ExampleSentence = exampleSentence;
+    }
+
+    public void UpdateAudio(string audioFilePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(audioFilePath);
+        AudioFilePath = audioFilePath;
     }
 
     public static string? JoinPartsOfSpeech(IReadOnlyList<string> parts) =>

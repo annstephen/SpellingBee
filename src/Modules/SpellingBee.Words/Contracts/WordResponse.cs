@@ -8,5 +8,5 @@ public sealed record WordResponse(
     string? Etymology,
     string? Origin,
     string? ExampleSentence,
-    string? AudioKey,
+    string? AudioFilePath,
     DateTimeOffset ImportedAt);

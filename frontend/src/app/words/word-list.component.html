@@ -113,8 +113,8 @@
         <ng-container matColumnDef="audio">
           <th mat-header-cell *matHeaderCellDef>Pronunciation</th>
           <td mat-cell *matCellDef="let word">
-            @if (word.audioKey) {
-              <button mat-icon-button (click)="audio.play(word.audioKey)" matTooltip="Listen">
+            @if (word.audioFilePath) {
+              <button mat-icon-button (click)="audio.play(word.audioFilePath)" matTooltip="Listen">
                 <mat-icon>volume_up</mat-icon>
               </button>
             } @else {

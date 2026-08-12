@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Scalar.AspNetCore;
 using SpellingBee.Progress;
 using SpellingBee.Progress.Data;
@@ -32,7 +33,9 @@ public static class ApiHost
         var dbPath = Path.Combine(appDataRoot, "spellingbee.db");
         builder.Configuration["ConnectionStrings:WordsDb"] = $"Data Source={dbPath}";
         builder.Configuration["ConnectionStrings:ProgressDb"] = $"Data Source={dbPath}";
-        builder.Configuration["AudioStorage:RootPath"] = Path.Combine(appDataRoot, "audio");
+        var audioRootPath = Path.Combine(appDataRoot, "audio");
+        builder.Configuration["AudioStorage:RootPath"] = audioRootPath;
+        Directory.CreateDirectory(audioRootPath);
 
         builder.Services.AddCors(options =>
         {
@@ -66,6 +69,11 @@ public static class ApiHost
         app.MapControllers();
         app.UseDefaultFiles();
         app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(audioRootPath),
+            RequestPath = "/audio",
+        });
         app.MapFallbackToFile("index.html");
 
         return app;

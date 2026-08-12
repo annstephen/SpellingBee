@@ -14,17 +14,20 @@ internal sealed class WordImportService : IWordImportService
 {
     private readonly WordsDbContext _db;
     private readonly IMerriamWebsterClient _mwClient;
+    private readonly ITextToSpeechClient _ttsClient;
     private readonly IAudioFileStore _audioStore;
     private readonly ILogger<WordImportService> _logger;
 
     public WordImportService(
         WordsDbContext db,
         IMerriamWebsterClient mwClient,
+        ITextToSpeechClient ttsClient,
         IAudioFileStore audioStore,
         ILogger<WordImportService> logger)
     {
         _db = db;
         _mwClient = mwClient;
+        _ttsClient = ttsClient;
         _audioStore = audioStore;
         _logger = logger;
     }
@@ -71,20 +74,18 @@ internal sealed class WordImportService : IWordImportService
             }
 
             string? audioFilePath = null;
-            if (lookup.AudioKey is not null)
+            try
             {
-                try
-                {
-                    audioFilePath = await _audioStore.DownloadAsync(lookup.AudioKey, ct);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Audio download failed for '{Word}' (key: {Key})", normalized, lookup.AudioKey);
-                }
+                var audioBytes = await _ttsClient.SynthesizeAsync(normalized, ct);
+                audioFilePath = await _audioStore.SaveAsync(normalized, audioBytes, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Audio synthesis failed for '{Word}'", normalized);
             }
 
             var partOfSpeech = Word.JoinPartsOfSpeech(lookup.PartOfSpeech);
-            var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, lookup.AudioKey, audioFilePath, lookup.ExampleSentence);
+            var word = Word.Create(normalized, partOfSpeech, lookup.Definition, lookup.Etymology, audioFilePath, lookup.ExampleSentence);
             _db.Words.Add(word);
 
             try

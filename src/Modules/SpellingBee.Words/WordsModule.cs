@@ -20,11 +20,15 @@ public static class WordsModule
         services.Configure<MerriamWebsterOptions>(
             configuration.GetSection("MerriamWebster"));
 
+        services.Configure<GoogleTextToSpeechOptions>(
+            configuration.GetSection("GoogleTextToSpeech"));
+
         services.Configure<AudioStorageOptions>(
             configuration.GetSection("AudioStorage"));
 
         services.AddHttpClient<IMerriamWebsterClient, MerriamWebsterClient>();
-        services.AddHttpClient<IAudioFileStore, AudioFileStore>();
+        services.AddHttpClient<ITextToSpeechClient, GoogleTextToSpeechClient>();
+        services.AddSingleton<IAudioFileStore, AudioFileStore>();
 
         services.AddScoped<IWordImportService, WordImportService>();
         services.AddScoped<IWordService, WordService>();
