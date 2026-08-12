@@ -48,7 +48,9 @@ dotnet test
 
 ## Configuration
 
-Non-secret defaults live in [`src/SpellingBee.API/appsettings.json`](src/SpellingBee.API/appsettings.json). For local `dotnet run`/debugging, developer overrides (like a real `MerriamWebster:ApiKey`) go in a gitignored `src/SpellingBee.API/appsettings.Development.json`.
+Non-secret defaults live in [`src/SpellingBee.API/appsettings.json`](src/SpellingBee.API/appsettings.json). For local `dotnet run`/debugging, developer overrides (like a real `MerriamWebster:ApiKey` and `GoogleTextToSpeech:ApiKey`) go in a gitignored `src/SpellingBee.API/appsettings.Development.json`.
+
+Word definitions/etymology/part-of-speech/example sentences come from the [Merriam-Webster Collegiate Dictionary API](https://dictionaryapi.com/). Pronunciation audio is synthesized separately from the word's own text via [Google Cloud Text-to-Speech](https://cloud.google.com/text-to-speech), so it can never end up pronouncing a different word or phrase than the one being tested. This needs a Google Cloud **API key** (Console → APIs & Services → Credentials → Create Credentials → API key) with the **Cloud Text-to-Speech API** enabled for the project — not a service account key, which many orgs block via policy and which this integration doesn't use. The synthesized audio files are cached on disk under the configured `AudioStorage:RootPath` and served back to the frontend at `/audio/...`.
 
 The packaged desktop app (`SpellingBee.Desktop`) always runs as `Production`, so it never reads `appsettings.Development.json`. Instead it loads an optional per-machine overlay file at:
 
@@ -59,10 +61,13 @@ The packaged desktop app (`SpellingBee.Desktop`) always runs as `Production`, so
 e.g.
 
 ```json
-{ "MerriamWebster": { "ApiKey": "<your key>" } }
+{
+  "MerriamWebster": { "ApiKey": "<your key>" },
+  "GoogleTextToSpeech": { "ApiKey": "<your key>" }
+}
 ```
 
-This file is never committed and lives outside the install directory, so it survives reinstalls/upgrades — the same folder already used for the SQLite DB and audio cache. The app runs fine without it; dictionary lookups just won't resolve. The installer doesn't need to embed or prompt for secrets — this file is set once per machine.
+This file is never committed and lives outside the install directory, so it survives reinstalls/upgrades — the same folder already used for the SQLite DB and audio cache. The app runs fine without it; dictionary lookups and pronunciation audio just won't resolve. The installer doesn't need to embed or prompt for secrets — this file is set once per machine.
 
 ## Build the Installer
 
