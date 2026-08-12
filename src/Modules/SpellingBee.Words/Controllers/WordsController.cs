@@ -95,6 +95,16 @@ public class WordsController : ControllerBase
         return Ok(summary);
     }
 
+    [HttpPost("regenerate-audio")]
+    [EndpointName("RegenerateAudio")]
+    [Tags("Words")]
+    [ProducesResponseType(typeof(AudioRegenerateSummary), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RegenerateAudio(CancellationToken ct)
+    {
+        var summary = await _wordService.RegenerateAudioAsync(ct);
+        return Ok(summary);
+    }
+
     [HttpPost]
     [EndpointName("AddWord")]
     [Tags("Words")]

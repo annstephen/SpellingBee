@@ -2,5 +2,5 @@ namespace SpellingBee.Words.Infrastructure;
 
 public interface IAudioFileStore
 {
-    Task<string> DownloadAsync(string audioKey, CancellationToken ct = default);
+    Task<string> SaveAsync(string wordText, byte[] audioBytes, CancellationToken ct = default);
 }

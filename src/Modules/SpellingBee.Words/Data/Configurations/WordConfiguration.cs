@@ -19,7 +19,6 @@ internal sealed class WordConfiguration : IEntityTypeConfiguration<Word>
         builder.Property(w => w.Definition).HasMaxLength(2000);
         builder.Property(w => w.Etymology).HasMaxLength(2000);
         builder.Property(w => w.ExampleSentence).HasMaxLength(500);
-        builder.Property(w => w.AudioKey).HasMaxLength(200);
         builder.Property(w => w.AudioFilePath).HasMaxLength(500);
     }
 }

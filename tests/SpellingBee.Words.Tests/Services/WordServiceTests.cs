@@ -13,6 +13,7 @@ public sealed class WordServiceTests : IDisposable
 {
     private readonly WordsDbContext _db;
     private readonly IMerriamWebsterClient _mwClient;
+    private readonly ITextToSpeechClient _ttsClient;
     private readonly IAudioFileStore _audioStore;
     private readonly WordService _sut;
 
@@ -23,24 +24,28 @@ public sealed class WordServiceTests : IDisposable
             .Options;
         _db = new WordsDbContext(options);
         _mwClient = Substitute.For<IMerriamWebsterClient>();
+        _ttsClient = Substitute.For<ITextToSpeechClient>();
         _audioStore = Substitute.For<IAudioFileStore>();
-        _sut = new WordService(_db, _mwClient, _audioStore, NullLogger<WordService>.Instance);
+        _sut = new WordService(_db, _mwClient, _ttsClient, _audioStore, NullLogger<WordService>.Instance);
     }
 
     [Fact]
     public async Task AddWordAsync_ValidWord_ReturnsWordResponse()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(["adjective"], "lasting a very short time", "Greek ephemeros", "epheme02"));
-        _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
-            .Returns("e/epheme02.mp3");
+            .Returns(new WordLookupResult(["adjective"], "lasting a very short time", "Greek ephemeros"));
+        var audioBytes = new byte[] { 1, 2, 3 };
+        _ttsClient.SynthesizeAsync("ephemeral", Arg.Any<CancellationToken>())
+            .Returns(audioBytes);
+        _audioStore.SaveAsync("ephemeral", audioBytes, Arg.Any<CancellationToken>())
+            .Returns("e/ephemeral.mp3");
 
         var result = await _sut.AddWordAsync("ephemeral");
 
         Assert.Equal("ephemeral", result.Text);
         Assert.Equal(["adjective"], result.PartOfSpeech);
         Assert.Equal("lasting a very short time", result.Definition);
-        Assert.Equal("epheme02", result.AudioKey);
+        Assert.Equal("e/ephemeral.mp3", result.AudioFilePath);
         Assert.True(result.Id > 0);
         Assert.True(await _db.Words.AnyAsync(w => w.Text == "ephemeral"));
     }
@@ -49,7 +54,7 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_NormalisesTextToLowercase()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult([], null, null, null));
+            .Returns(new WordLookupResult([], null, null));
 
         var result = await _sut.AddWordAsync("  Ephemeral  ");
 
@@ -60,7 +65,7 @@ public sealed class WordServiceTests : IDisposable
     public async Task AddWordAsync_DuplicateWord_ThrowsInvalidOperation()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult([], null, null, null));
+            .Returns(new WordLookupResult([], null, null));
         await _sut.AddWordAsync("ephemeral");
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.AddWordAsync("ephemeral"));
@@ -80,11 +85,11 @@ public sealed class WordServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task AddWordAsync_AudioDownloadFails_StillSavesWord()
+    public async Task AddWordAsync_AudioSynthesisFails_StillSavesWord()
     {
         _mwClient.LookupAsync("ephemeral", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(["adjective"], "a definition", null, "epheme02"));
-        _audioStore.DownloadAsync("epheme02", Arg.Any<CancellationToken>())
+            .Returns(new WordLookupResult(["adjective"], "a definition", null));
+        _ttsClient.SynthesizeAsync("ephemeral", Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("audio unavailable"));
 
         var result = await _sut.AddWordAsync("ephemeral");
@@ -96,7 +101,7 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task DeleteAsync_ExistingWord_RemovesAndReturnsTrue()
     {
-        var word = Word.Create("quorum", null, null, null, null, null);
+        var word = Word.Create("quorum", null, null, null, null);
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
 
@@ -117,9 +122,9 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task DeleteManyAsync_ExistingWords_RemovesAllMatched()
     {
-        var w1 = Word.Create("quorum", null, null, null, null, null);
-        var w2 = Word.Create("zenith", null, null, null, null, null);
-        var w3 = Word.Create("nadir", null, null, null, null, null);
+        var w1 = Word.Create("quorum", null, null, null, null);
+        var w2 = Word.Create("zenith", null, null, null, null);
+        var w3 = Word.Create("nadir", null, null, null, null);
         _db.Words.AddRange(w1, w2, w3);
         await _db.SaveChangesAsync();
 
@@ -133,7 +138,7 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task DeleteManyAsync_UnknownIdsIgnored_DoesNotThrow()
     {
-        var word = Word.Create("quorum", null, null, null, null, null);
+        var word = Word.Create("quorum", null, null, null, null);
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
 
@@ -146,8 +151,8 @@ public sealed class WordServiceTests : IDisposable
     public async Task ClearAllAsync_RemovesAllWords()
     {
         _db.Words.AddRange(
-            Word.Create("quorum", null, null, null, null, null),
-            Word.Create("zenith", null, null, null, null, null));
+            Word.Create("quorum", null, null, null, null),
+            Word.Create("zenith", null, null, null, null));
         await _db.SaveChangesAsync();
 
         await _sut.ClearAllAsync();
@@ -166,11 +171,11 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task RefreshExampleSentencesAsync_WordMissingSentence_UpdatesIt()
     {
-        var word = Word.Create("quorum", null, null, null, null, null);
+        var word = Word.Create("quorum", null, null, null, null);
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
         _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null, null, "The board could not vote without a quorum."));
+            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null, "The board could not vote without a quorum."));
 
         var summary = await _sut.RefreshExampleSentencesAsync();
 
@@ -184,7 +189,7 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task RefreshExampleSentencesAsync_WordAlreadyHasSentence_IsNotRefetched()
     {
-        var word = Word.Create("quorum", null, null, null, null, null, "Already has a sentence.");
+        var word = Word.Create("quorum", null, null, null, null, "Already has a sentence.");
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
 
@@ -197,11 +202,11 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task RefreshExampleSentencesAsync_LookupHasNoSentence_CountsAsSkipped()
     {
-        var word = Word.Create("quorum", null, null, null, null, null);
+        var word = Word.Create("quorum", null, null, null, null);
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
         _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
-            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null, null));
+            .Returns(new WordLookupResult(["noun"], "a minimum number of members", null));
 
         var summary = await _sut.RefreshExampleSentencesAsync();
 
@@ -213,13 +218,49 @@ public sealed class WordServiceTests : IDisposable
     [Fact]
     public async Task RefreshExampleSentencesAsync_LookupThrows_CountsAsFailed()
     {
-        var word = Word.Create("quorum", null, null, null, null, null);
+        var word = Word.Create("quorum", null, null, null, null);
         _db.Words.Add(word);
         await _db.SaveChangesAsync();
         _mwClient.LookupAsync("quorum", Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("unavailable"));
 
         var summary = await _sut.RefreshExampleSentencesAsync();
+
+        Assert.Equal(0, summary.Updated);
+        Assert.Equal(1, summary.Failed);
+        Assert.Contains("quorum", summary.FailedWords);
+    }
+
+    [Fact]
+    public async Task RegenerateAudioAsync_ValidWord_UpdatesAudioFilePath()
+    {
+        var word = Word.Create("quorum", null, null, null, "old/quorum.mp3");
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+        var audioBytes = new byte[] { 1, 2, 3 };
+        _ttsClient.SynthesizeAsync("quorum", Arg.Any<CancellationToken>())
+            .Returns(audioBytes);
+        _audioStore.SaveAsync("quorum", audioBytes, Arg.Any<CancellationToken>())
+            .Returns("q/quorum.mp3");
+
+        var summary = await _sut.RegenerateAudioAsync();
+
+        Assert.Equal(1, summary.Updated);
+        Assert.Equal(0, summary.Failed);
+        Assert.Equal("q/quorum.mp3",
+            (await _db.Words.SingleAsync(w => w.Id == word.Id)).AudioFilePath);
+    }
+
+    [Fact]
+    public async Task RegenerateAudioAsync_SynthesisThrows_CountsAsFailed()
+    {
+        var word = Word.Create("quorum", null, null, null, null);
+        _db.Words.Add(word);
+        await _db.SaveChangesAsync();
+        _ttsClient.SynthesizeAsync("quorum", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("tts unavailable"));
+
+        var summary = await _sut.RegenerateAudioAsync();
 
         Assert.Equal(0, summary.Updated);
         Assert.Equal(1, summary.Failed);

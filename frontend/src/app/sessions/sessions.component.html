@@ -91,7 +91,7 @@
           <div class="pronunciation-row">
             <button
               mat-icon-button
-              [disabled]="!currentWord()?.audioKey"
+              [disabled]="!currentWord()?.audioFilePath"
               (click)="playCurrentWord()"
               matTooltip="Play pronunciation"
             >

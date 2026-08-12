@@ -9,5 +9,4 @@ public sealed record WordLookupResult(
     IReadOnlyList<string> PartOfSpeech,
     string? Definition,
     string? Etymology,
-    string? AudioKey,
     string? ExampleSentence = null);

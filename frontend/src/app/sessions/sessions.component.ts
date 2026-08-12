@@ -157,7 +157,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
 
   playCurrentWord(): void {
     const word = this.currentWord();
-    if (word?.audioKey) this.wordAudio.play(word.audioKey);
+    if (word?.audioFilePath) this.wordAudio.play(word.audioFilePath);
   }
 
   setTypedWord(value: string): void {

@@ -80,16 +80,6 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
                 exampleSentence = ObscureExampleSentence(rawVis, GetKnownForms(first, word));
         }
 
-        string? audioKey = null;
-        if (first.TryGetProperty("hwi", out var hwi) &&
-            hwi.TryGetProperty("prs", out var prs) &&
-            prs.GetArrayLength() > 0 &&
-            prs[0].TryGetProperty("sound", out var sound) &&
-            sound.TryGetProperty("audio", out var audio))
-        {
-            audioKey = audio.GetString();
-        }
-
         // Inflected forms (e.g. "teeth") have empty shortdef and a cxs cross-reference to the
         // base form. Follow it once to fill in fields the inflected entry is missing.
         if (definition is null &&
@@ -106,14 +96,13 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
                     definition ??= baseResult?.Definition;
                     etymology ??= baseResult?.Etymology;
                     exampleSentence ??= baseResult?.ExampleSentence;
-                    audioKey ??= baseResult?.AudioKey;
                     if (partsOfSpeech.Count == 0 && baseResult?.PartOfSpeech.Count > 0)
                         partsOfSpeech.AddRange(baseResult.PartOfSpeech);
                 }
             }
         }
 
-        return new WordLookupResult(partsOfSpeech, definition, etymology, audioKey, exampleSentence);
+        return new WordLookupResult(partsOfSpeech, definition, etymology, exampleSentence);
     }
 
     // Recursively scans M-W's `def[].sseq` sense tree for the first `["vis", [{ "t": "..." }]]`
@@ -211,13 +200,5 @@ internal sealed partial class MerriamWebsterClient : IMerriamWebsterClient
         }
 
         return forms;
-    }
-
-    internal static string GetAudioSubdir(string key)
-    {
-        if (key.StartsWith("bix", StringComparison.Ordinal)) return "bix";
-        if (key.StartsWith("gg", StringComparison.Ordinal)) return "gg";
-        if (char.IsDigit(key[0]) || char.IsPunctuation(key[0])) return "number";
-        return key[0].ToString();
     }
 }
