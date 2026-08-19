@@ -4,15 +4,17 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { WordsClient } from '../api/api.generated';
+import { WordResponse, WordsClient } from '../api/api.generated';
 // Voice recognition is disabled for now — sessions are typed instead of spoken.
 // See onLetter/startListening below (kept, but not invoked from the active flow).
 // import { SpeechModelService } from '../speech/speech-model.service';
 import { WordAudioService } from '../words/word-audio.service';
+import { classifyWords } from '../shared/word-mastery';
 import { SessionService, SessionState, WordAttempt } from './session.service';
 
 type Phase =
@@ -31,6 +33,7 @@ type Phase =
     // RouterLink,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
@@ -48,6 +51,12 @@ export class SessionsComponent implements OnInit, OnDestroy {
   readonly phase = signal<Phase>('checking');
   readonly maxWords = signal(0);
   readonly wordCount = signal(10);
+  readonly seenBeforeCount = signal(0);
+  readonly includeMastered = signal(false);
+  readonly masteredCount = signal(0);
+  readonly availableNew = signal(0);
+  readonly availableInProgress = signal(0);
+  readonly availableMastered = signal(0);
   readonly session = signal<SessionState | null>(null);
   readonly typedWord = signal('');
   readonly feedbackVisible = signal(false);
@@ -74,6 +83,13 @@ export class SessionsComponent implements OnInit, OnDestroy {
     () => this.session()?.attempts.filter(a => !a.correct) ?? []
   );
 
+  readonly newWordsCount = computed(() =>
+    Math.max(0, this.wordCount() - this.seenBeforeCount() - this.masteredCount())
+  );
+
+  readonly masteredCheckboxDisabled = computed(() => this.availableMastered() === 0);
+  readonly seenBeforeFieldDisabled = computed(() => this.availableInProgress() === 0);
+
   async ngOnInit(): Promise<void> {
     // Voice calibration gate is disabled while the calibration page is hidden.
     // const calibrated = await this.speechModel.isCalibrated();
@@ -90,31 +106,116 @@ export class SessionsComponent implements OnInit, OnDestroy {
       this.session.set(saved);
       this.phase.set('resume-prompt');
     } else {
-      await this.loadWordCount();
+      await this.loadComposition();
       this.phase.set('configure');
     }
   }
 
-  private async loadWordCount(): Promise<void> {
-    const words = await firstValueFrom(this.wordsClient.getAllWords());
+  private async loadComposition(): Promise<void> {
+    const [words, progress] = await Promise.all([
+      firstValueFrom(this.wordsClient.getAllWords()),
+      firstValueFrom(this.wordsClient.getAllProgress()),
+    ]);
     this.maxWords.set(words.length);
     this.wordCount.set(Math.min(10, words.length));
+
+    const classified = classifyWords(words, progress);
+    this.availableNew.set(classified.filter(m => m.status === 'unattempted').length);
+    this.availableInProgress.set(classified.filter(m => m.status === 'in-progress').length);
+    this.availableMastered.set(classified.filter(m => m.status === 'mastered').length);
+
+    // Reset sub-selections against the freshly loaded bucket sizes.
+    this.seenBeforeCount.set(0);
+    this.masteredCount.set(0);
+    this.includeMastered.set(false);
   }
 
   setWordCount(value: string): void {
     const n = parseInt(value, 10);
-    if (!isNaN(n)) this.wordCount.set(Math.max(1, Math.min(n, this.maxWords())));
+    if (isNaN(n)) return;
+    this.wordCount.set(Math.max(1, Math.min(n, this.maxWords())));
+    this.clampSubCounts();
+  }
+
+  setSeenBeforeCount(value: string): void {
+    const n = parseInt(value, 10);
+    if (isNaN(n)) return;
+    const maxAllowed = Math.min(this.availableInProgress(), this.wordCount() - this.masteredCount());
+    this.seenBeforeCount.set(Math.max(0, Math.min(n, Math.max(0, maxAllowed))));
+  }
+
+  setMasteredCount(value: string): void {
+    const n = parseInt(value, 10);
+    if (isNaN(n)) return;
+    const maxAllowed = Math.min(this.availableMastered(), this.wordCount() - this.seenBeforeCount());
+    this.masteredCount.set(Math.max(0, Math.min(n, Math.max(0, maxAllowed))));
+  }
+
+  toggleIncludeMastered(): void {
+    this.includeMastered.update(v => !v);
+    if (!this.includeMastered()) {
+      this.masteredCount.set(0);
+    } else if (this.masteredCount() === 0 && this.availableMastered() > 0) {
+      const remaining = this.wordCount() - this.seenBeforeCount();
+      this.masteredCount.set(Math.max(0, Math.min(1, this.availableMastered(), remaining)));
+    }
+  }
+
+  private clampSubCounts(): void {
+    const total = this.wordCount();
+    this.masteredCount.set(Math.max(0, Math.min(this.masteredCount(), this.availableMastered(), total)));
+    const remaining = total - this.masteredCount();
+    this.seenBeforeCount.set(Math.max(0, Math.min(this.seenBeforeCount(), this.availableInProgress(), remaining)));
   }
 
   async startSession(): Promise<void> {
     this.phase.set('loading');
-    const allWords = await firstValueFrom(this.wordsClient.getAllWords());
-    const shuffled = this.shuffle([...allWords]);
-    const selected = shuffled.slice(0, this.wordCount());
+    const [allWords, progress] = await Promise.all([
+      firstValueFrom(this.wordsClient.getAllWords()),
+      firstValueFrom(this.wordsClient.getAllProgress()),
+    ]);
+    const classified = classifyWords(allWords, progress);
+
+    const newBucket = this.shuffle(classified.filter(m => m.status === 'unattempted').map(m => m.word));
+    const inProgressBucket = this.shuffle(classified.filter(m => m.status === 'in-progress').map(m => m.word));
+    const masteredBucket = this.shuffle(classified.filter(m => m.status === 'mastered').map(m => m.word));
+
+    const total = this.wordCount();
+    const requestedMastered = this.includeMastered() ? this.masteredCount() : 0;
+    const requestedSeenBefore = this.seenBeforeCount();
+
+    // Take up to the requested amount from each exclusive bucket.
+    const takenMastered = masteredBucket.slice(0, requestedMastered);
+    const takenSeenBefore = inProgressBucket.slice(0, requestedSeenBefore);
+
+    // Remaining slots after mastered+seen-before are filled from new words.
+    const remainingSlots = total - takenMastered.length - takenSeenBefore.length;
+    const takenNew = newBucket.slice(0, remainingSlots);
+
+    // If the new bucket itself falls short, backfill from unused
+    // in-progress words, then unused mastered words, in that order.
+    let stillNeeded = remainingSlots - takenNew.length;
+    if (stillNeeded > 0) {
+      const extraInProgress = inProgressBucket.slice(
+        takenSeenBefore.length,
+        takenSeenBefore.length + stillNeeded
+      );
+      takenSeenBefore.push(...extraInProgress);
+      stillNeeded -= extraInProgress.length;
+    }
+    if (stillNeeded > 0) {
+      const extraMastered = masteredBucket.slice(takenMastered.length, takenMastered.length + stillNeeded);
+      takenMastered.push(...extraMastered);
+      stillNeeded -= extraMastered.length;
+    }
+    // If stillNeeded is still > 0, the whole library is short of `total`
+    // words — the session will simply have fewer than requested.
+
+    const selected = this.shuffle<WordResponse>([...takenNew, ...takenSeenBefore, ...takenMastered]);
 
     const state: SessionState = {
       id: 'current',
-      wordCount: this.wordCount(),
+      wordCount: selected.length,
       words: selected,
       currentWordIndex: 0,
       attempts: [],
@@ -149,7 +250,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
 
   async discardAndStartNew(): Promise<void> {
     await this.sessionService.clear();
-    await this.loadWordCount();
+    await this.loadComposition();
     this.session.set(null);
     this.typedWord.set('');
     this.phase.set('configure');
@@ -223,7 +324,7 @@ export class SessionsComponent implements OnInit, OnDestroy {
     this.originVisible.set(false);
     this.sentenceVisible.set(false);
     this.partOfSpeechVisible.set(false);
-    await this.loadWordCount();
+    await this.loadComposition();
     this.phase.set('configure');
   }
 
