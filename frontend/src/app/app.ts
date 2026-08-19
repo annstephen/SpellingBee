@@ -5,13 +5,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { WordsClient, WordResponse, WordProgressResponse } from './api/api.generated';
-
-interface WordMastery {
-  word: WordResponse;
-  status: 'unattempted' | 'in-progress' | 'mastered';
-  score: number;
-  progress: WordProgressResponse | undefined;
-}
+import { classifyWords, WordMastery } from './shared/word-mastery';
 
 @Component({
   selector: 'app-root',
@@ -38,22 +32,7 @@ export class App {
 
   readonly wordMastery = computed<WordMastery[]>(() => {
     const { words, progress } = this.wordsAndProgress();
-    const progressByWordId = new Map(progress.map(p => [p.wordId, p]));
-
-    const items = words.map(word => {
-      const p = progressByWordId.get(word.id);
-      if (!p || p.attemptCount === 0) {
-        return { word, status: 'unattempted' as const, score: 0, progress: p };
-      }
-      const accuracy = p.correctCount / p.attemptCount;
-      const mastered = p.attemptCount > 10 && accuracy > 0.9;
-      // Floor of 0.15 so any attempted word is visibly distinct from an
-      // unattempted (pure white) one, even before accuracy/volume build up.
-      const score = mastered
-        ? 1
-        : Math.min(0.15 + 0.75 * accuracy * Math.min(p.attemptCount / 5, 1), 0.95);
-      return { word, status: mastered ? ('mastered' as const) : ('in-progress' as const), score, progress: p };
-    });
+    const items = classifyWords(words, progress);
 
     // Attempted words (in-progress or mastered) first, unattempted last.
     return items.sort((a, b) => {

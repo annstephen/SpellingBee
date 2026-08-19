@@ -43,8 +43,15 @@
   margin-top: 2rem;
 }
 
-.word-count-field {
+.word-count-field,
+.seen-before-field,
+.mastered-count-field {
   width: 100%;
+  margin-top: 1rem;
+}
+
+.mastered-checkbox {
+  display: block;
   margin-top: 1rem;
 }
 
@@ -52,6 +59,10 @@
   color: var(--mat-sys-on-surface-variant);
   font-size: 0.875rem;
   margin: 0.5rem 0 0;
+}
+
+.composition-hint {
+  margin-top: 0.75rem;
 }
 
 .error-text {

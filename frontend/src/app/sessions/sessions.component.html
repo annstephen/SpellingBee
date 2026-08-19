@@ -36,6 +36,51 @@
               (change)="setWordCount($any($event.target).value)"
             />
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="seen-before-field">
+            <mat-label>Seen-before words</mat-label>
+            <input
+              matInput
+              type="number"
+              [min]="0"
+              [max]="availableInProgress()"
+              [value]="seenBeforeCount()"
+              [disabled]="seenBeforeFieldDisabled()"
+              (change)="setSeenBeforeCount($any($event.target).value)"
+            />
+            <mat-hint>{{ availableInProgress() }} available</mat-hint>
+          </mat-form-field>
+
+          <mat-checkbox
+            class="mastered-checkbox"
+            [checked]="includeMastered()"
+            [disabled]="masteredCheckboxDisabled()"
+            (change)="toggleIncludeMastered()"
+          >
+            Include mastered words
+            @if (masteredCheckboxDisabled()) {
+              (0 available)
+            }
+          </mat-checkbox>
+
+          @if (includeMastered()) {
+            <mat-form-field appearance="outline" class="mastered-count-field">
+              <mat-label>Mastered words</mat-label>
+              <input
+                matInput
+                type="number"
+                [min]="0"
+                [max]="availableMastered()"
+                [value]="masteredCount()"
+                (change)="setMasteredCount($any($event.target).value)"
+              />
+              <mat-hint>{{ availableMastered() }} available</mat-hint>
+            </mat-form-field>
+          }
+
+          <p class="hint composition-hint">
+            {{ newWordsCount() }} new + {{ seenBeforeCount() }} seen-before + {{ masteredCount() }} mastered
+          </p>
           <p class="hint">Listen to each word, then type the spelling.</p>
         </mat-card-content>
         <mat-card-actions>
